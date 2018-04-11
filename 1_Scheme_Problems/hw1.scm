@@ -54,3 +54,72 @@
         ]
     )
 )
+
+
+
+; sorted?
+(define (compare-first-two-from-list alist)
+    (< (car alist) (car (cdr alist)))
+)
+
+(define (sorted? alist)
+    (cond 
+        [(null? (cdr (cdr alist)))
+         (compare-first-two-from-list alist)
+        ]
+        [#t  
+            (and (compare-first-two-from-list alist) (sorted? (cdr alist)))
+        ]
+        
+    )
+)
+
+;apply-action
+;Takes two parameters: an action and a state. Returns the updated state that will result by following that action.
+;A state is a list of three elements: an X position, a Y position, and a direction (N, S, E, or W). An action is one
+;of the following strings: STAY, MOVE-1, MOVE-2, MOVE-3, TURN-LEFT, TURN-RIGHT, or TURN-
+;AROUND. Assume that all moves are forward, relative to the current direction. For example:
+
+;input  (apply-action ‘(5 2 N) “MOVE-2”)
+;output (5 4 N)
+
+(define (debug-log message)
+    (display "DEBUG: ")
+    (display message)
+    (newline)
+)
+
+(define (error-log message)
+    (display "ERROR: ")
+    (display message)
+    (newline)
+)
+
+(define (apply-action-move state move-val)
+    (debug-log move-val)
+)
+
+(define (apply-action-turn state turn-val)
+    (debug-log turn-val)
+)
+
+(define (apply-action state action)
+    (debug-log (substring action 0 4))
+    (cond 
+        [ (equal? (substring action 0 4) "STAY")
+            state
+        ]
+        [ (equal? (substring action 0 4) "MOVE")
+            (apply-action-move state (substring action 5 (string-length action)))
+        ]
+        [ (equal? (substring action 0 4) "TURN")
+            (apply-action-turn state (substring action 5 (string-length action)))
+        ]
+        [#t  
+          (error-log "Invalid Move")
+        ]
+        
+    )
+)
+
+;(apply-action '(0 0 S) "TURN-RIGHT")
