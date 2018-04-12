@@ -95,31 +95,147 @@
     (newline)
 )
 
+(define (nth-item n alist)
+    (if (= n 1) (car alist) (nth-item (- n 1) (cdr alist))) 
+)
+
+(define (replace-nth-item n alist val)
+    (cond   
+        [ (null? alist)
+            '()
+        ]
+        [ (= n 1) 
+            (cons val (replace-nth-item (- n 1) (cdr alist) val))
+        ]
+        [ #t 
+            (cons (car alist) (replace-nth-item (- n 1) (cdr alist) val))
+        ]
+    )
+)
+
 (define (apply-action-move state move-val)
     (debug-log move-val)
+    (cond 
+        [ (equal? (nth-item 3 state) 'N)
+                (replace-nth-item 2 state (+ (nth-item 2 state) (string->number move-val)))
+        ]
+        [ 
+            (equal? (nth-item 3 state) 'W)
+                (replace-nth-item 1 state (- (nth-item 1 state) (string->number move-val)))
+        ]
+        [ 
+            (equal? (nth-item 3 state) 'S)
+                (replace-nth-item 2 state (- (nth-item 2 state) (string->number move-val))) 
+        ]
+        [ 
+            (equal? (nth-item 3 state) 'E)
+                (replace-nth-item 1 state (+ (nth-item 1 state) (string->number move-val))) 
+        ]
+        [#t  
+          (error-log "Invalid Direction Given")
+        ]
+    )
 )
 
 (define (apply-action-turn state turn-val)
     (debug-log turn-val)
+    (debug-log (nth-item 3 state))
+    (cond 
+        [ (equal? (nth-item 3 state) 'N)
+            (cond
+                [
+                    (equal? turn-val "LEFT")
+                        (replace-nth-item 3 state 'W)
+                ]
+                [
+                    (equal? turn-val "RIGHT")
+                    (replace-nth-item 3 state 'E)
+                ]
+                [
+                    (equal? turn-val "AROUND")
+                    (replace-nth-item 3 state 'S)
+                ]    
+            )            
+        ]
+        [ (equal? (nth-item 3 state) 'W)
+            (cond
+                [
+                    (equal? turn-val "LEFT")
+                        (replace-nth-item 3 state 'S)
+                ]
+                [
+                    (equal? turn-val "RIGHT")
+                    (replace-nth-item 3 state 'N)
+                ]
+                [
+                    (equal? turn-val "AROUND")
+                    (replace-nth-item 3 state 'E)
+                ]    
+            )
+        ]
+        [ (equal? (nth-item 3 state) 'S)
+            (debug-log "HERE")
+            (cond
+                [
+                    (equal? turn-val "LEFT")
+                        (replace-nth-item 3 state 'E)
+                ]
+                [
+                    (equal? turn-val "RIGHT")
+                    (replace-nth-item 3 state 'W)
+                ]
+                [
+                    (equal? turn-val "AROUND")
+                    (replace-nth-item 3 state 'N)
+                ]    
+            )
+        ]
+        [ (equal? (nth-item 3 state) 'E)
+            (cond
+                [
+                    (equal? turn-val "LEFT")
+                        (replace-nth-item 3 state 'N)
+                ]
+                [
+                    (equal? turn-val "RIGHT")
+                    (replace-nth-item 3 state 'S)
+                ]
+                [
+                    (equal? turn-val "AROUND")
+                    (replace-nth-item 3 state 'W)
+                ]    
+            )
+        ]
+        [#t  
+          (error-log "Invalid Direction Given")
+        ]
+    )
 )
 
 (define (apply-action state action)
     (debug-log (substring action 0 4))
     (cond 
-        [ (equal? (substring action 0 4) "STAY")
-            state
+        [ 
+            (equal? (substring action 0 4) "STAY")
+                state
         ]
-        [ (equal? (substring action 0 4) "MOVE")
-            (apply-action-move state (substring action 5 (string-length action)))
+        [ 
+            (equal? (substring action 0 4) "MOVE")
+                (apply-action-move state (substring action 5 (string-length action)))
         ]
-        [ (equal? (substring action 0 4) "TURN")
-            (apply-action-turn state (substring action 5 (string-length action)))
+        [ 
+            (equal? (substring action 0 4) "TURN")
+                (apply-action-turn state (substring action 5 (string-length action)))
         ]
-        [#t  
-          (error-log "Invalid Move")
+        [
+            #t  
+                (error-log "Invalid Move")
         ]
         
     )
 )
 
 ;(apply-action '(0 0 S) "TURN-RIGHT")
+
+
+(equal? (nth-item 3 '(0 0 N)) (car  '(N) ))
