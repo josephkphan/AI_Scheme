@@ -238,4 +238,33 @@
 ;(apply-action '(0 0 S) "TURN-RIGHT")
 
 
-(equal? (nth-item 3 '(0 0 N)) (car  '(N) ))
+
+(define (nth-item n alist)
+    (if (= n 1) (car alist) (nth-item (- n 1) (cdr alist))) 
+)
+
+;get-location
+(define (get-x-row agent-world yCoord)
+    (nth-item yCoord agent-world)
+)
+
+(define (translate-xCoord-to-index xCoord yCoord)
+    (+ (+ xCoord yCoord) 1)
+)
+
+(define (get-location agent-world xCoord yCoord)
+    (nth-item (translate-xCoord-to-index xCoord yCoord) (get-x-row agent-world yCoord))
+)
+
+(get-location
+'((empty empty empty)
+(empty (vegetation 2 45) empty empty empty)
+((vegetation 3 150) empty empty empty empty empty barrier)
+(barrier empty empty empty empty empty empty barrier barrier)
+(barrier barrier empty (vegetation 4 200) empty empty empty
+(vegetation 1 125) barrier barrier barrier))
+0 1)
+
+
+(get-x-row $24 2)
+(translate-xCoord-to-index -1 2)
