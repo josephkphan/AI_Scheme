@@ -1,5 +1,27 @@
+; Creator: Joseph Phan
+; Homework 1: Scheming
+; Coen266 
+; Spring 2018
 
-;Find Biggest - Create a function to find the maximum of a list 
+
+;---- Logging Functions
+(define (debug-log message)
+    (display "DEBUG: ")
+    (display message)
+    (newline)
+)
+;TODO Remember to remove all debug-log from functions before submission
+
+(define (error-log message)
+    (display "ERROR: ")
+    (display message)
+    (newline)
+)
+
+; ------ Basic Assignment: 
+
+; Find Biggest - Create a function to find the maximum of a list 
+; ASSUMPTION: List is not empty
 (define (max x y)
     (if (> x y) x y))
 
@@ -7,8 +29,8 @@
     (if (null? (cdr alist)) (car alist) (max (car alist) (find-biggest (cdr alist)))
     ))
 
-
 ; count-from - Inclusively displays all the numbers between A and B
+; ASSUMPTION: A < B
 (define (count-from A B)
     (cond
         [(<= A B) 
@@ -19,28 +41,15 @@
     )
 )
 
-;nth-item
+; nth-item - get's the nth item from a list
+; ASSUMPTION: List is not empty
 (define (nth-item n alist)
     (if (= n 1) (car alist) (nth-item (- n 1) (cdr alist))) 
 )
 
 
-;replace-nth-item
-; DOESN'T WORK
-(define (replace-nth-item-helper counter n val in_list )
-    (cond   
-        [ (= n counter) 
-            (replace-nth-item-helper (+ counter 1) n val (cdr in_list) (cons out_list val))
-        ]
-        [ (null? in_list) 
-            out_list
-        ]
-        [ #t 
-            (replace-nth-item-helper (+ counter 1) n val (cdr in_list) (cons out_list (car in_list)))
-        ]
-    )
-)
-
+; replace-nth-item - replaces the nth item from a list with a given value
+; ASSUMPTION: List is not empty, n is <= length of list
 (define (replace-nth-item n alist val)
     (cond   
         [ (null? alist)
@@ -57,7 +66,8 @@
 
 
 
-; sorted?
+; sorted? - returns boolean value if a list is sorted or not
+; ASSUMPTION: List is not empty
 (define (compare-first-two-from-list alist)
     (< (car alist) (car (cdr alist)))
 )
@@ -80,41 +90,7 @@
 ;of the following strings: STAY, MOVE-1, MOVE-2, MOVE-3, TURN-LEFT, TURN-RIGHT, or TURN-
 ;AROUND. Assume that all moves are forward, relative to the current direction. For example:
 
-;input  (apply-action ‘(5 2 N) “MOVE-2”)
-;output (5 4 N)
-
-(define (debug-log message)
-    (display "DEBUG: ")
-    (display message)
-    (newline)
-)
-
-(define (error-log message)
-    (display "ERROR: ")
-    (display message)
-    (newline)
-)
-
-(define (nth-item n alist)
-    (if (= n 1) (car alist) (nth-item (- n 1) (cdr alist))) 
-)
-
-(define (replace-nth-item n alist val)
-    (cond   
-        [ (null? alist)
-            '()
-        ]
-        [ (= n 1) 
-            (cons val (replace-nth-item (- n 1) (cdr alist) val))
-        ]
-        [ #t 
-            (cons (car alist) (replace-nth-item (- n 1) (cdr alist) val))
-        ]
-    )
-)
-
 (define (apply-action-move state move-val)
-    (debug-log move-val)
     (cond 
         [ (equal? (nth-item 3 state) 'N)
                 (replace-nth-item 2 state (+ (nth-item 2 state) (string->number move-val)))
@@ -138,8 +114,6 @@
 )
 
 (define (apply-action-turn state turn-val)
-    (debug-log turn-val)
-    (debug-log (nth-item 3 state))
     (cond 
         [ (equal? (nth-item 3 state) 'N)
             (cond
@@ -174,7 +148,6 @@
             )
         ]
         [ (equal? (nth-item 3 state) 'S)
-            (debug-log "HERE")
             (cond
                 [
                     (equal? turn-val "LEFT")
@@ -213,7 +186,6 @@
 )
 
 (define (apply-action state action)
-    (debug-log (substring action 0 4))
     (cond 
         [ 
             (equal? (substring action 0 4) "STAY")
@@ -235,15 +207,11 @@
     )
 )
 
-;(apply-action '(0 0 S) "TURN-RIGHT")
 
+; ------ Advanced Assignment: 
 
-
-(define (nth-item n alist)
-    (if (= n 1) (car alist) (nth-item (- n 1) (cdr alist))) 
-)
-
-;get-location
+; get-location - gets the location of a given coordinate given the percept
+; ASSUMPTION - percept remains the same structure as given in the example (Triangle shaped from origin)
 (define (get-x-row agent-world yCoord)
     (nth-item yCoord agent-world)
 )
@@ -255,16 +223,4 @@
 (define (get-location agent-world xCoord yCoord)
     (nth-item (translate-xCoord-to-index xCoord yCoord) (get-x-row agent-world yCoord))
 )
-
-(get-location
-'((empty empty empty)
-(empty (vegetation 2 45) empty empty empty)
-((vegetation 3 150) empty empty empty empty empty barrier)
-(barrier empty empty empty empty empty empty barrier barrier)
-(barrier barrier empty (vegetation 4 200) empty empty empty
-(vegetation 1 125) barrier barrier barrier))
-0 1)
-
-
-(get-x-row $24 2)
-(translate-xCoord-to-index -1 2)
+ 
