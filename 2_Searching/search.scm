@@ -166,38 +166,32 @@
 (define (list-length alist)
     (if (null? alist) 0 (+ 1 (list-length(cdr alist))))
 )
-(define (append-list a b)
-  (cons b a)
-)
 
-; (1 2) (1 3) (1 4) (1 5) (2 3) (2 4) (2 5) (3 4) (3 5) (4 5)
-(define (possible-swaps max swap1 swap2 swap-list)
+; scheme@(guile-user) [14]> (possible-swaps 5 1 2 '())
+; $48 = ((4 5) (3 5) (3 4) (2 5) (2 4) (2 3) (1 5) (1 4) (1 3) (1 2))
+(define (possible-swaps-helper list-length swap1 swap2 swap-list)
     (cond
-        [(equal? swap2 max)
-        (display "SWAP = MAX: ")
-        (display (list swap1 swap2))
-        (newline)
-        (display swap-list)
-        (possible-swaps max (+ swap1 1)  (+ swap1 2) (cons (list swap1 swap2) swap-list ))
+        [
+            (equal? swap2 list-length)
+                (possible-swaps-helper list-length (+ swap1 1)  (+ swap1 2) (cons (list swap1 swap2) swap-list ))
         ]
-        [(> swap2 max)
-            (display "SWAP > MAX: ")
-            (display (list swap1 swap2 max))
-            (newline)
-            (display swap-list)
-            swap-list
+        [
+            (> swap2 list-length)
+                swap-list
         ]
-        [#t
-            (display "DEFAULT: ")
-            (display (list swap1 swap2))
-            (newline)
-            (display swap-list)
-            (possible-swaps max swap1  (+ swap2 1) (cons (list swap1 swap2) swap-list ))
-            ;(list swap-list (list swap1 swap2))
-            
+        [
+            #t
+                (possible-swaps-helper list-length swap1  (+ swap2 1) (cons (list swap1 swap2) swap-list ))
         ]
     )
 )
+
+; scheme@(guile-user) [17]> (possible-swaps 5)
+; $49 = ((4 5) (3 5) (3 4) (2 5) (2 4) (2 3) (1 5) (1 4) (1 3) (1 2))
+(define (possible-swaps list-length)
+    (possible-swaps-helper list-length 1 2 '())
+)
+
 ; TODO DON'T FORGET - LENGTH >=2. IF LENGTH <=1. IT IS TRUE !!!!
 
 
@@ -205,8 +199,23 @@
 
 ;scheme@(guile-user) [2]> (list '(A B C) '( 1 2 ) )
 ;$4 = ((A B C) (1 2))
-(define (get-children alist )
-                ; (swap )
+
+
+(define (get-children-helper states swap-list children-list)
+    (cond
+        [
+            (null? swap-list)
+                children-list
+        ]
+        [
+            #t
+                (get-children-helper states (cdr swap-list) (cons (cons (swap-element (nth-item 1 (car swap-list)) (nth-item 2 (car swap-list)) states)  (car swap-list)) children-list))
+        ]
+    )
+)
+
+(define (get-children states)
+    (get-children-helper states (possible-swaps (list-length states)) '())
 )
 
 
