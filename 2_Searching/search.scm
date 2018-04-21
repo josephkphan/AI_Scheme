@@ -128,11 +128,15 @@
     )
 )
 
+;(index-of 'Hawaii adjacency-map)
 (define (index-of state alist)
     (index-of-helper state alist 1)
 )
-;(index-of 'Hawaii adjacency-map)
 
+;(contains 'A '(A B))
+; #t
+;(contains 'A '(B C))
+; #f
 (define (contains state alist)
     (cond 
         [
@@ -149,26 +153,21 @@
         ]
     )
 )
-;scheme@(guile-user) [15]> (contains 'A '(A B))
-;$16 = #t
-;scheme@(guile-user) [15]> (contains 'A '(B C))
-;$17 = #f
 
+;(is-adjacent 'New-York 'Vermont)
+; #t
+;(is-adjacent 'New-York 'Florida)
+; #f
 (define (is-adjacent state1 state2)
     (contains state2 (nth-item (index-of state1 adjacency-map) adjacency-map))
 )
-;scheme@(guile-user) [16]> (is-adjacent 'New-York 'Vermont)
-;$21 = #t
-;scheme@(guile-user) [16]> (is-adjacent 'New-York 'Florida)
-;$22 = #f
-
 
 (define (list-length alist)
     (if (null? alist) 0 (+ 1 (list-length(cdr alist))))
 )
 
-; scheme@(guile-user) [14]> (possible-swaps 5 1 2 '())
-; $48 = ((4 5) (3 5) (3 4) (2 5) (2 4) (2 3) (1 5) (1 4) (1 3) (1 2))
+; (possible-swaps 5 1 2 '())
+; ((4 5) (3 5) (3 4) (2 5) (2 4) (2 3) (1 5) (1 4) (1 3) (1 2))
 (define (possible-swaps-helper list-length swap1 swap2 swap-list)
     (cond
         [
@@ -186,20 +185,13 @@
     )
 )
 
-; scheme@(guile-user) [17]> (possible-swaps 5)
-; $49 = ((4 5) (3 5) (3 4) (2 5) (2 4) (2 3) (1 5) (1 4) (1 3) (1 2))
+; (possible-swaps 5)
+; (4 5) (3 5) (3 4) (2 5) (2 4) (2 3) (1 5) (1 4) (1 3) (1 2))
 (define (possible-swaps list-length)
     (possible-swaps-helper list-length 1 2 '())
 )
 
 ; TODO DON'T FORGET - LENGTH >=2. IF LENGTH <=1. IT IS TRUE !!!!
-
-
-;(get-children '(A B C)  '()')
-
-;scheme@(guile-user) [2]> (list '(A B C) '( 1 2 ) )
-;$4 = ((A B C) (1 2))
-
 
 (define (get-children-helper state-list swap-list children-list)
     (cond
@@ -217,8 +209,8 @@
 (define (get-children state-list)
     (get-children-helper state-list (possible-swaps (list-length state-list)) '())
 )
-;scheme@(guile-user) [29]> (get-children '(A B C D))
-;$58 = (((B A C D) 1 2) ((C B A D) 1 3) ((D B C A) 1 4) ((A C B D) 2 3) ((A D C B) 2 4) ((A B D C) 3 4))
+;(get-children '(A B C D))
+;(((B A C D) 1 2) ((C B A D) 1 3) ((D B C A) 1 4) ((A C B D) 2 3) ((A D C B) 2 4) ((A B D C) 3 4))
 
 (define (is-goal-state state-list)
     (cond
@@ -236,3 +228,14 @@
     )
 )
 ;(is-goal-state '(Alabama Hawaii))
+(define (dfs frontier)
+    
+    (cond 
+        ((null? frontier)   ;Base Care : if you have a null list, you failed
+            #f )
+        ((goal-test (car frontier) ) ; Check the head of the frontier if it's the goal state
+            (car frontier))
+        ( #t               ; append children of frontier with the cdr of the frontier back into dfs
+            (dfs (append (get-children car(frontier)) (cdr frontier)))
+    )
+)
