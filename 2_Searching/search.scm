@@ -161,3 +161,52 @@
 ;$21 = #t
 ;scheme@(guile-user) [16]> (is-adjacent 'New-York 'Florida)
 ;$22 = #f
+
+
+(define (list-length alist)
+    (if (null? alist) 0 (+ 1 (list-length(cdr alist))))
+)
+(define (append-list a b)
+  (cons b a)
+)
+
+; (1 2) (1 3) (1 4) (1 5) (2 3) (2 4) (2 5) (3 4) (3 5) (4 5)
+(define (possible-swaps max swap1 swap2 swap-list)
+    (cond
+        [(equal? swap2 max)
+        (display "SWAP = MAX: ")
+        (display (list swap1 swap2))
+        (newline)
+        (display swap-list)
+        (possible-swaps max (+ swap1 1)  (+ swap1 2) (cons (list swap1 swap2) swap-list ))
+        ]
+        [(> swap2 max)
+            (display "SWAP > MAX: ")
+            (display (list swap1 swap2 max))
+            (newline)
+            (display swap-list)
+            swap-list
+        ]
+        [#t
+            (display "DEFAULT: ")
+            (display (list swap1 swap2))
+            (newline)
+            (display swap-list)
+            (possible-swaps max swap1  (+ swap2 1) (cons (list swap1 swap2) swap-list ))
+            ;(list swap-list (list swap1 swap2))
+            
+        ]
+    )
+)
+; TODO DON'T FORGET - LENGTH >=2. IF LENGTH <=1. IT IS TRUE !!!!
+
+
+;(get-children '(A B C)  '()')
+
+;scheme@(guile-user) [2]> (list '(A B C) '( 1 2 ) )
+;$4 = ((A B C) (1 2))
+(define (get-children alist )
+                ; (swap )
+)
+
+

@@ -31,3 +31,6 @@
 
 
 
+((large small) () () )
+(1 1) ; where it is position of (small disk, large disk)
+((small 1)(large 1))
