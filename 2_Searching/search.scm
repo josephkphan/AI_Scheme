@@ -201,7 +201,7 @@
 ;$4 = ((A B C) (1 2))
 
 
-(define (get-children-helper states swap-list children-list)
+(define (get-children-helper state-list swap-list children-list)
     (cond
         [
             (null? swap-list)
@@ -209,13 +209,30 @@
         ]
         [
             #t
-                (get-children-helper states (cdr swap-list) (cons (cons (swap-element (nth-item 1 (car swap-list)) (nth-item 2 (car swap-list)) states)  (car swap-list)) children-list))
+                (get-children-helper state-list (cdr swap-list) (cons (cons (swap-element (nth-item 1 (car swap-list)) (nth-item 2 (car swap-list)) states)  (car swap-list)) children-list))
         ]
     )
 )
 
-(define (get-children states)
-    (get-children-helper states (possible-swaps (list-length states)) '())
+(define (get-children state-list)
+    (get-children-helper state-list (possible-swaps (list-length state-list)) '())
 )
+;scheme@(guile-user) [29]> (get-children '(A B C D))
+;$58 = (((B A C D) 1 2) ((C B A D) 1 3) ((D B C A) 1 4) ((A C B D) 2 3) ((A D C B) 2 4) ((A B D C) 3 4))
 
-
+(define (is-goal-state state-list)
+    (cond
+        [
+            (null? (cdr state-list))
+                #t
+        ]
+        [
+            #t
+                (if (is-adjacent (car state-list) (car (cdr state-list)))
+                    (is-goal-state (cdr state-list))
+                    #f
+                )
+        ]
+    )
+)
+;(is-goal-state '(Alabama Hawaii))
