@@ -201,18 +201,21 @@
         ]
         [
             #t
-                (get-children-helper state-list (cdr swap-list) (cons (cons (swap-element (nth-item 1 (car swap-list)) (nth-item 2 (car swap-list)) states)  (car swap-list)) children-list))
+                (get-children-helper state-list (cdr swap-list) (cons (cons (swap-element (nth-item 1 (car swap-list)) (nth-item 2 (car swap-list)) state-list)  (list(car swap-list))) children-list))
         ]
     )
 )
 
-(define (get-children state-list)
-    (get-children-helper state-list (possible-swaps (list-length state-list)) '())
+(define (get-children state-list result)
+    (get-children-helper state-list (possible-swaps (list-length state-list)) result)
 )
-;(get-children '(A B C D))
+;(get-children '(A B C D) '())
 ;(((B A C D) 1 2) ((C B A D) 1 3) ((D B C A) 1 4) ((A C B D) 2 3) ((A D C B) 2 4) ((A B D C) 3 4))
 
-(define (is-goal-state state-list)
+;(is-goal-state '((California Washington Oregon) ()))
+;
+(define (is-goal-state-helper state-list)
+    (display "is-goal-state-helper: ") (display state-list) (newline)
     (cond
         [
             (null? (cdr state-list))
@@ -220,22 +223,85 @@
         ]
         [
             #t
+                (display "Comparing ") (display (car state-list)) (display " and ") (display (car (cdr state-list))) (newline)
                 (if (is-adjacent (car state-list) (car (cdr state-list)))
-                    (is-goal-state (cdr state-list))
+                    (is-goal-state-helper (cdr state-list))
                     #f
                 )
         ]
     )
 )
-;(is-goal-state '(Alabama Hawaii))
+
+(define (is-goal-state child)
+    (display "is-goal-state: ") (display child) (newline)
+    (is-goal-state-helper (car child))
+)
+
+
+;(dfs '((California Washington Oregon)))
 (define (dfs frontier)
-    
+    (display "Frontier: ") (display frontier) (newline)
     (cond 
         ((null? frontier)   ;Base Care : if you have a null list, you failed
             #f )
-        ((goal-test (car frontier) ) ; Check the head of the frontier if it's the goal state
+        ((is-goal-state (car frontier) ) ; Check the head of the frontier if it's the goal state
+            (display "FOUND GOAL STATE: ")
+            (display frontier) (newline)
             (car frontier))
         ( #t               ; append children of frontier with the cdr of the frontier back into dfs
-            (dfs (append (get-children car(frontier)) (cdr frontier)))
+            (display "---------") (newline)
+            (display "Frontier: ") (display frontier) (newline)
+            (display "Car frontier ")(display (car frontier)) (newline)
+            (display "Get Children ")(display (get-children (car (car frontier)) '())) (newline)
+            (display "Cdr frontier ")(display (cdr frontier)) (newline)
+            ;(dfs (append (get-children (car (car frontier)) '()) (cdr frontier))))
+            (append (get-children (car (car frontier)) '()) (cdr frontier)))
     )
 )
+
+;(id-dfs '(California Washington Oregon))
+(define (id-dfs state-list)
+    (dfs (get-children state-list '()))
+)
+
+
+(define (ldfs frontier max-depth counter)
+    (display "Frontier: ") (display frontier) (newline)
+    (cond 
+        [(null? frontier)   ;Base Care : if you have a null list, you failed
+            #f 
+        ]
+        [(is-goal-state (car frontier) ) ; Check the head of the frontier if it's the goal state
+            (display "FOUND GOAL STATE: ")
+            (display frontier) (newline)
+            (car frontier)
+        ]
+        [
+            (> counter max-depth)
+                (display "POP UP") (newline)
+                (display "Counter: ") (display counter) (display " Max Depth: ") (display max-depth) (newline)
+                (ldfs (cdr frontier) max-depth (- counter 1))
+        ]
+        [ #t               ; append children of frontier with the cdr of the frontier back into dfs
+            (display "---------") (newline)
+            (display "Frontier: ") (display frontier) (newline)
+            (display "Car frontier ")(display (car frontier)) (newline)
+            (display "Get Children ")(display (get-children (car (car frontier)) '())) (newline)
+            (display "Cdr frontier ")(display (cdr frontier)) (newline)
+            (ldfs (append (get-children (car (car frontier)) '()) (cdr frontier)) max-depth (+ counter 1))
+            ;(append (get-children (car (car frontier)) '()) (cdr frontier))
+        ]
+    )
+)
+
+;(idf-dfs '(California Washington Oregon) 3)
+(define (idf-dfs state-list max-depth)
+    ;TODO CHECK length=1 and length=0 case
+    (ldfs (get-children state-list '()) max-depth 1)
+)
+
+
+
+
+
+
