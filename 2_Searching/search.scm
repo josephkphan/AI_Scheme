@@ -240,7 +240,7 @@
     (is-goal-state-helper (car child))
 )
 
-(define (ldfs frontier max-depth counter state-history)
+(define (ldfs-helper frontier max-depth counter state-history)
     ;(display "Frontier: ") (display frontier) (newline)
     (cond 
         [(null? frontier)   ;Base Care : if you have a null list, you failed
@@ -249,7 +249,7 @@
         [
             (equal? (car frontier) 'MARKER)
             (display "<<<<< POP UP") (newline)
-            (ldfs  (cdr frontier) max-depth (- counter 1) state-history)
+            (ldfs-helper  (cdr frontier) max-depth (- counter 1) state-history)
         ]
         [(is-goal-state (car frontier) ) ; Check the head of the frontier if it's the goal state
             (display "FOUND GOAL STATE: ")
@@ -263,22 +263,22 @@
                 ;(display "Counter: ") (display counter) (newline)
                 (newline)
                 (display "Car: ") (display (car frontier)) (newline)
-                (ldfs  (cdr frontier) max-depth counter state-history )
+                (ldfs-helper  (cdr frontier) max-depth counter state-history )
         ]
         [
-            (> counter max-depth)
+            (>= counter max-depth)
                 (newline)
                 (display "<<<<< SAME LEVEL") (newline)
                 (display "Car: ") (display (car frontier)) (newline)
-                (ldfs  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history) )
+                (ldfs-helper  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history) )
         ]
         [ #t               ; append children of frontier with the cdr of the frontier back into dfs
             (newline)
             (display ">>>>> GO DOWN ") (newline)
             (display "Car: ") (display (car frontier)) (newline)
             (if (= counter max-depth)
-                (ldfs  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history))
-                (ldfs (append (append (get-children (car (car frontier)) '(MARKER) (car(cdr (car frontier)))) ) (cdr frontier)) max-depth (+ counter 1) (cons (car (car frontier)) state-history) )
+                (ldfs-helper  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history))
+                (ldfs-helper (append (append (get-children (car (car frontier)) '(MARKER) (car(cdr (car frontier)))) ) (cdr frontier)) max-depth (+ counter 1) (cons (car (car frontier)) state-history) )
                 
             )
                 ;(append (get-children (car (car frontier)) '()) (cdr frontier))
@@ -287,24 +287,27 @@
 )
 
 
-;(idf-dfs '(California Washington Arizona Oregon Nevada) 4)
-
-
-
-
-
-
-;(idf-dfs '(California Washington Oregon Arizona Montana Utah) 4)
-;(idf-dfs '(California Washington Idaho Arizona Oregon Montana) 4)
-; (idf-dfs '(California Washington Oregon Arizona Utah Idaho Montana Florida) 2)
-(define (idf-dfs state-list max-depth)
+;(ldfs '(California Washington Oregon Arizona Montana Utah) 4)
+;(ldfs '(California Washington Idaho Arizona Oregon Montana) 4)
+;(ldfs'(California Washington Oregon Arizona Utah Idaho Montana Florida) 2)
+;(ldfs '(California Washington Idaho Arizona Oregon Montana) 5)
+(define (ldfs state-list max-depth)
     ;TODO CHECK length=1 and length=0 case
-    (ldfs (get-children state-list '() '()) max-depth 1 (list state-list))
+    (ldfs-helper (get-children state-list '() '()) max-depth 1 (list state-list))
 )
 
+(define (id-dfs-helper state-list max counter)
+    (display "Hello World")
+)
 
+(define (id-dfs state-list)
+    (display "Hello World")
+)
 
-
-
-
+(define (permutation number)
+    (if (= number 1) 
+        number
+        (* number (permutation (- number 1)))    
+    )
+)
 
