@@ -91,15 +91,15 @@
 ; Example Output:(A B D)
 (define (replace-nth-item n alist val)
     (cond   
-        [ (null? alist)
+        ( (null? alist)
             '()
-        ]
-        [ (= n 1) 
+        )
+        ( (= n 1) 
         (cons val (replace-nth-item (- n 1) (cdr alist) val))
-        ]
-        [ #t 
+        )
+        ( #t 
             (cons (car alist) (replace-nth-item (- n 1) (cdr alist) val))
-        ]
+        )
     )
 )
 
@@ -127,18 +127,18 @@
 ; Example Output: #t
 (define (contains item alist)
     (cond 
-        [
+        (
             (null? alist) 
                 #f
-        ]
-        [
+        )
+        (
             (equal? (car alist) item)
                 #t
-        ]
-        [
+        )
+        (
             #t 
                 (contains item (cdr alist))
-        ]
+        )
     )
 )
 
@@ -154,19 +154,19 @@
 ; helper function for index-of
 (define (index-of-helper state alist counter)
     (cond 
-        [
+        (
             (null? alist) 
                 (error-log (cons "could not find state" state) )
                 #f
-        ]
-        [
+        )
+        (
             (equal? (car (car alist)) state)
                 counter
-        ]
-        [
+        )
+        (
             #t 
                 (index-of-helper state (cdr alist) (+ counter 1))
-        ]
+        )
     )
 )
 
@@ -194,18 +194,18 @@
 ;                reaches the end of the list. Instead of swapping. its saving the indexes of what will be swapped
 (define (possible-swaps-helper list-length swap1 swap2 swap-list)
     (cond
-        [
+        (
             (equal? swap2 list-length)
                 (possible-swaps-helper list-length (+ swap1 1)  (+ swap1 2) (cons (list swap1 swap2) swap-list ))
-        ]
-        [
+        )
+        (
             (> swap2 list-length)
                 swap-list
-        ]
-        [
+        )
+        (
             #t
                 (possible-swaps-helper list-length swap1  (+ swap2 1) (cons (list swap1 swap2) swap-list ))
-        ]
+        )
     )
 )
 
@@ -227,14 +227,14 @@
 ;               to the swap-state. 
 (define (get-children-helper state-list swap-list children-list swap-state)
     (cond
-        [
+        (
             (null? swap-list)
                 children-list
-        ]
-        [
+        )
+        (
             #t
                 (get-children-helper state-list (cdr swap-list) (cons (cons (swap-element (nth-item 1 (car swap-list)) (nth-item 2 (car swap-list)) state-list)  (list(cons (car swap-list) swap-state))) children-list) swap-state)
-        ]
+        )
     )
 )
 
@@ -250,17 +250,17 @@
 ; Algorithm: for every element in the statelist, check its neighbors to see if the are adjacent
 (define (is-goal-state-helper state-list)
     (cond
-        [
+        (
             (null? (cdr state-list))
                 #t
-        ]
-        [
+        )
+        (
             #t
                 (if (is-adjacent (car state-list) (car (cdr state-list)))
                     (is-goal-state-helper (cdr state-list))
                     #f
                 )
-        ]
+        )
     )
 )
 
@@ -278,48 +278,43 @@
 ;               max-depth       = maximum depth (number of swaps) allowed to perform from given starting state
 ;               counter         = used to track the current depth 
 ;               state-history   = used to keep track of visited states to prevent infinite loops
+; NOTE: 'MARKER is appended to the end of the "added children list" to indicate to pop back up 
+;                         ABC
+;                      /   |    \
+;                  BAC    CBA    ACB  'MARKER   
+;              /   |    \    
+;            ABC  CBA   CBA 'MARKER
 (define (ldfs-helper frontier max-depth counter state-history)
     (cond 
-        [(null? frontier)   ;Base Care : if you have a null list, you failed
-            #f 
-        ]
-        [
+        (   ; FAILED: Exhausted the frontier. No more possible states to check. 
+            (null? frontier) 
+                #f 
+        )
+        (   ; Reached the End of an added children list. Pop back up 
             (equal? (car frontier) 'MARKER)
-            (display "<<<<< POP UP") (newline)
-            (ldfs-helper  (cdr frontier) max-depth (- counter 1) state-history)
-        ]
-        [(is-goal-state (car frontier) ) ; Check the head of the frontier if it's the goal state
-            (display "FOUND GOAL STATE: ")
-            (display (car frontier)) (newline)
-            (display "HERE") (newline)
-            (list (car (car frontier)) (reverse (car(cdr (car frontier)))))
-        ]
-        [
+                (ldfs-helper  (cdr frontier) max-depth (- counter 1) state-history)
+        )
+        (   ; SUCCESS: Found the goal state! Return the result
+            (is-goal-state (car frontier) ) ; Check the head of the frontier if it's the goal state
+                (list (car (car frontier)) (reverse (car(cdr (car frontier)))))
+        )
+        (   ; Already saw a state like this.. No need to add its children back into the frontier
             (contains (car (car frontier)) state-history )
-            (display "===== HISTORY") (newline)
-                ;(display "Counter: ") (display counter) (newline)
-                (newline)
-                (display "Car: ") (display (car frontier)) (newline)
                 (ldfs-helper  (cdr frontier) max-depth counter state-history )
-        ]
-        [
+        )
+        (   ; Reached the Depth Limit. Check your neighbor child. (same as popping back to parent and checking 
+            ; your sibling)
             (>= counter max-depth)
-                (newline)
-                (display "<<<<< SAME LEVEL") (newline)
-                (display "Car: ") (display (car frontier)) (newline)
                 (ldfs-helper  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history) )
-        ]
-        [ #t               ; append children of frontier with the cdr of the frontier back into dfs
-            (newline)
-            (display ">>>>> GO DOWN ") (newline)
-            (display "Car: ") (display (car frontier)) (newline)
-            (if (= counter max-depth)
-                (ldfs-helper  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history))
-                (ldfs-helper (append (append (get-children (car (car frontier)) '(MARKER) (car(cdr (car frontier)))) ) (cdr frontier)) max-depth (+ counter 1) (cons (car (car frontier)) state-history) )
-                
-            )
-                ;(append (get-children (car (car frontier)) '()) (cdr frontier))
-        ]
+        )
+        (   ; Default Case: Find the children of the state you are in and append them to the frontier
+            #t 
+                (if (= counter max-depth)
+                    (ldfs-helper  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history))
+                    (ldfs-helper (append (append (get-children (car (car frontier)) '(MARKER) (car(cdr (car frontier)))) ) (cdr frontier)) max-depth (+ counter 1) (cons (car (car frontier)) state-history) )
+                    
+                )
+        )
     )
 )
 
