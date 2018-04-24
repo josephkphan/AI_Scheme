@@ -1,7 +1,7 @@
 ; Author:       Joseph Phan
 ; Class:        Coen 266 AI
 ; Assignment 2: Searching 
-
+; Date:         Spring 2018
 ; ------------------------------- Input Data -----------------------------------
 
 ; Input Data Definition of US Map and the adjacency relationship across states
@@ -77,6 +77,19 @@
 )
 
 ; ------------------------------- Simple Functions -----------------------------------
+
+; factorial: Provides the factorial mathematical result of the given number
+; Assumption: Input >= 1
+; Example Input: (factorial 5)
+; Example Output: 120
+(define (factorial number)
+    (if (<= number 1) 
+        number
+        (* number (factorial (- number 1)))    
+    )
+)
+
+
 ; nth-item: get's the nth item from a list
 ; ASSUMPTION: List is not empty
 ; Example Input: (nth-item 3 '(A B C))
@@ -84,6 +97,7 @@
 (define (nth-item n alist)
     (if (= n 1) (car alist) (nth-item (- n 1) (cdr alist))) 
 )
+
 
 ; replace-nth-item: replaces the nth item from a list with a given value
 ; ASSUMPTION: List is not empty, n is <= length of list
@@ -319,27 +333,50 @@
 )
 
 
-;(ldfs '(California Washington Oregon Arizona Montana Utah) 4)
-;(ldfs '(California Washington Idaho Arizona Oregon Montana) 4)
-;(ldfs'(California Washington Oregon Arizona Utah Idaho Montana Florida) 2)
-;(ldfs '(California Washington Idaho Arizona Oregon Montana) 5)
+; Example Input: (ldfs '(California Washington Oregon) 4)
+; Example Output: ((California Oregon Washington) ((1 2) (1 3) (1 2)))
+
+; Example Input: (ldfs '(California Washington Idaho Arizona Oregon Montana) 5)
+; Example Output: ((Arizona California Oregon Washington Idaho Montana) ((1 2) (1 4) (1 5) (1 3) (1 5)))
+
+; Example Input: (ldfs '(California Washington Idaho Arizona Oregon Montana Florida) 5)
+; Example Output: #f
+
+; Example Input: (id-dfs '(California))
+; Example Output: ((California) ())
 (define (ldfs state-list max-depth)
-    ;TODO CHECK length=1 and length=0 case
-    (ldfs-helper (get-children state-list '() '()) max-depth 1 (list state-list))
-)
-
-(define (id-dfs-helper state-list max counter)
-    (display "Hello World")
-)
-
-(define (id-dfs state-list)
-    (display "Hello World")
-)
-
-(define (permutation number)
-    (if (= number 1) 
-        number
-        (* number (permutation (- number 1)))    
+    (if (<= (list-length state-list) 1)
+        (list state-list '())
+        (ldfs-helper (get-children state-list '() '()) max-depth 1 (list state-list))
     )
 )
+
+; Rationale for list-length for max-depth: This is under the rationale that. in the worst case solution and given
+; that there is a solution, you can ALWAYS solve the problem in n swaps (n beigng length). It is under the same rationale 
+; as selection sort. It takes 1 swap to put a state into its correct state. With the max depth being length, I believe
+; dfs should be able to encapsulate this scenario. Hopefully I'm right :)... Fingers crossed. This is my own thoughts.
+; no math to prove it. sorry. 
+
+; OTHERWISE....
+; My Initial Thoughts: Initially I thought it may have needed to be the permutation for max depth since this 
+; would cover every literal combination possible. AND it would still work! I just think the length... may be 
+; a the best minimum value to cover everything... (hopefully I'm right)
+
+; TO BE OPTIMAL (Minimal Amount of Swaps):
+; I would start from list-length, if I find a result. Increment down until you get your first #f. Last success (minimal depth needed)
+; will be the optimal in terms of swap.. but seems very costly. I guess thats why we need heuristics (to not exhaustively search)
+
+; Example Input: (id-dfs '(California Washington Oregon))
+; Example Output: ((California Oregon Washington) ((1 2) (1 3) (1 2)))
+
+; Example Input: (id-dfs '(California Washington Idaho Arizona Oregon Montana))
+; Example Output: ((Arizona California Oregon Washington Idaho Montana) ((1 2) (1 4) (1 5) (1 3) (1 5)))
+
+; Example Input: (id-dfs '(California Washington Idaho Arizona Oregon Montana Florida))
+; Example Output: #f
+(define (id-dfs state-list)
+    (ldfs state-list (list-length state-list))
+)
+
+
 
