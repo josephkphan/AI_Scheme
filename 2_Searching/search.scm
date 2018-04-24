@@ -1,4 +1,10 @@
-;input data 
+; Author:       Joseph Phan
+; Class:        Coen 266 AI
+; Assignment 2: Searching 
+
+; ------------------------------- Input Data -----------------------------------
+
+; Input Data Definition of US Map and the adjacency relationship across states
 (define adjacency-map '(
     (Alabama Mississippi Tennessee Georgia Florida)
     (Alaska)
@@ -53,43 +59,36 @@
   )
 )
 
-;---- Logging Functions
-(define (log-helper message-list)
-    (cond   
-        [ (null? message-list)
-                (newline)
-        ]
-        [ #t 
-            (display (car message-list))
-            (log-helper (cdr message-list))
-        ]
-    )
-)
-; TODO This function doesn't print (1 2 $3) with the value of $3
+; ------------------------------- Logging Functions -----------------------------------
 
+; Used as logging function for troubleshooting
+; TODO Remember to remove all debug-log from functions before submission
 (define (debug-log message)
     (display "DEBUG: ")
     (display message)
     (newline)
 )
-;TODO Remember to remove all debug-log from functions before submission
 
+; Used for error messages
 (define (error-log message)
     (display "ERROR: ")
     (display message)
     (newline)
 )
 
-
-; nth-item - get's the nth item from a list
+; ------------------------------- Simple Functions -----------------------------------
+; nth-item: get's the nth item from a list
 ; ASSUMPTION: List is not empty
+; Example Input: (nth-item 3 '(A B C))
+; Example Output:  C
 (define (nth-item n alist)
     (if (= n 1) (car alist) (nth-item (- n 1) (cdr alist))) 
 )
 
-
-; replace-nth-item - replaces the nth item from a list with a given value
+; replace-nth-item: replaces the nth item from a list with a given value
 ; ASSUMPTION: List is not empty, n is <= length of list
+; Example Input: (replace-nth-item 3 '(A B C) 'D)
+; Example Output:(A B D)
 (define (replace-nth-item n alist val)
     (cond   
         [ (null? alist)
@@ -104,12 +103,55 @@
     )
 )
 
+; swap-element: swaps two elements in a list
+; ASSUMPTION: n1 and n2 are valid inputs in the list
+; Example Input: (swap-element 2 3 '(A B C))
+; Example Output: (A C B)
 (define (swap-element n1 n2 alist)
     (let ((temp (nth-item n1 alist)))
         (replace-nth-item n2 (replace-nth-item n1 alist (nth-item n2 alist)) temp)
     )
 )
 
+; pop-list: Used to remove the last element of a list
+; Assumption: List is not empty
+; Example Input: (pop-list '(A B C))
+; Example Output: (A B)
+(define (pop-list alist)
+    (reverse (cdr (reverse alist)))
+)
+
+; contains: see if an item is in a list 
+; Assumption: Not a nested List
+; Example Input:(contains 'A '(A B))
+; Example Output: #t
+(define (contains item alist)
+    (cond 
+        [
+            (null? alist) 
+                #f
+        ]
+        [
+            (equal? (car alist) item)
+                #t
+        ]
+        [
+            #t 
+                (contains item (cdr alist))
+        ]
+    )
+)
+
+; list-length: outputs the length of a given list
+; Example Input: (list-length '(A B C))
+; Example Output: 3
+(define (list-length alist)
+    (if (null? alist) 0 (+ 1 (list-length(cdr alist))))
+)
+
+; --------------------------- US States Specific Functions -------------------------------
+
+; helper function for index-of
 (define (index-of-helper state alist counter)
     (cond 
         [
@@ -128,49 +170,28 @@
     )
 )
 
-;(index-of 'Hawaii adjacency-map)
+; index-of: Finds the index of a state in the defined adjacency map
+; Example Input: (index-of 'Hawaii adjacency-map)
+; Example Output: 11
+; Error Handling: will print out error message is state is not found in adjacency map
 (define (index-of state alist)
     (index-of-helper state alist 1)
 )
 
-(define (pop-list alist)
-    (reverse (cdr (reverse alist)))
-)
-;(contains 'A '(A B))
-; #t
-;(contains 'A '(B C))
-; #f
-(define (contains state alist)
-    (cond 
-        [
-            (null? alist) 
-                #f
-        ]
-        [
-            (equal? (car alist) state)
-                #t
-        ]
-        [
-            #t 
-                (contains state (cdr alist))
-        ]
-    )
-)
 
-;(is-adjacent 'New-York 'Vermont)
-; #t
-;(is-adjacent 'New-York 'Florida)
-; #f
+; is-adjacent: returns a boolean of whether two states are adjacent or not
+; Example Input: (is-adjacent 'New-York 'Vermont)
+; Example Output: #t
 (define (is-adjacent state1 state2)
     (contains state2 (nth-item (index-of state1 adjacency-map) adjacency-map))
 )
 
-(define (list-length alist)
-    (if (null? alist) 0 (+ 1 (list-length(cdr alist))))
-)
 
-; (possible-swaps 5 1 2 '())
-; ((4 5) (3 5) (3 4) (2 5) (2 4) (2 3) (1 5) (1 4) (1 3) (1 2))
+
+; helper function for possible-swaps
+; Algorithm :    The function will swap the first element with everybody else down the list 
+;                It will then swap the next element with everybody else down the list. and so on until it
+;                reaches the end of the list. Instead of swapping. its saving the indexes of what will be swapped
 (define (possible-swaps-helper list-length swap1 swap2 swap-list)
     (cond
         [
@@ -188,14 +209,22 @@
     )
 )
 
-; (possible-swaps 5)
-; (4 5) (3 5) (3 4) (2 5) (2 4) (2 3) (1 5) (1 4) (1 3) (1 2))
+; possible-swaps: returns a list of the possible combination of swaps using the indexes of the list
+; Example Input: (possible-swaps 5 1 2 '())
+; Example Output: ((4 5) (3 5) (3 4) (2 5) (2 4) (2 3) (1 5) (1 4) (1 3) (1 2))
 (define (possible-swaps list-length)
     (possible-swaps-helper list-length 1 2 '())
 )
 
-; TODO DON'T FORGET - LENGTH >=2. IF LENGTH <=1. IT IS TRUE !!!!
 
+; helper function to get-children
+; Parameters:    state-list     = the list that you want to see the possible child states for (possible swaps)
+;                swap-list      = this is the output of possible swaps, feeding this function what to swap
+;                children-list  = where the output is being stored. 
+;                swap-state     = keeps track of the swaps it took to get to the child state
+;
+; Algorithm:    For every element in the swap-list, perform that swap upon the state list, and append that swap-index-pair 
+;               to the swap-state. 
 (define (get-children-helper state-list swap-list children-list swap-state)
     (cond
         [
@@ -209,16 +238,17 @@
     )
 )
 
+; get-children: Used to determine all possible states 1 move away from the provided given state (state-list)
+; Input Example: (get-children '(A B C) '() '((1 2)))
+; Output Example: (((B A C) ((1 2) (1 2))) ((C B A) ((1 3) (1 2))) ((A C B) ((2 3) (1 2))))
 (define (get-children state-list result swap-state)
     (get-children-helper state-list (possible-swaps (list-length state-list)) result swap-state)
 )
-;(get-children '(A B C D) '() '(1 2)')
-;(((B A C D) 1 2) ((C B A D) 1 3) ((D B C A) 1 4) ((A C B D) 2 3) ((A D C B) 2 4) ((A B D C) 3 4))
 
-;(is-goal-state '((California Washington Oregon) ()))
-;
+
+; helper function to is-goal-state
+; Algorithm: for every element in the statelist, check its neighbors to see if the are adjacent
 (define (is-goal-state-helper state-list)
-    ;(display "is-goal-state-helper: ") (display state-list) (newline)
     (cond
         [
             (null? (cdr state-list))
@@ -226,7 +256,6 @@
         ]
         [
             #t
-                ;(display "Comparing ") (display (car state-list)) (display " and ") (display (car (cdr state-list))) (newline)
                 (if (is-adjacent (car state-list) (car (cdr state-list)))
                     (is-goal-state-helper (cdr state-list))
                     #f
@@ -235,13 +264,21 @@
     )
 )
 
+; is-goal-state: Returns a boolean of is the the provided states list is a goal state
+; GOAL STATE DEFINITION: a list that can be trasversed on a map crossing border to border
+; Example Input: (is-goal-state '((California Washington Oregon)))
+; Example Output: #f
 (define (is-goal-state child)
-    ;(display "is-goal-state: ") (display child) (newline)
     (is-goal-state-helper (car child))
 )
 
+; ldfs for limited depth first search 
+; helper function for ldfs. 
+; Parameters:   frontier        = the queue of states to check
+;               max-depth       = maximum depth (number of swaps) allowed to perform from given starting state
+;               counter         = used to track the current depth 
+;               state-history   = used to keep track of visited states to prevent infinite loops
 (define (ldfs-helper frontier max-depth counter state-history)
-    ;(display "Frontier: ") (display frontier) (newline)
     (cond 
         [(null? frontier)   ;Base Care : if you have a null list, you failed
             #f 
