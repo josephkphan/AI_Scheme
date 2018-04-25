@@ -98,7 +98,6 @@
     (if (= n 1) (car alist) (nth-item (- n 1) (cdr alist))) 
 )
 
-
 ; replace-nth-item: replaces the nth item from a list with a given value
 ; ASSUMPTION: List is not empty, n is <= length of list
 ; Example Input: (replace-nth-item 3 '(A B C) 'D)
@@ -302,7 +301,7 @@
     (cond 
         (   ; FAILED: Exhausted the frontier. No more possible states to check. 
             (null? frontier) 
-                #f 
+                '() 
         )
         (   ; Reached the End of an added children list. Pop back up 
             (equal? (car frontier) 'MARKER)
@@ -374,9 +373,265 @@
 
 ; Example Input: (id-dfs '(California Washington Idaho Arizona Oregon Montana Florida))
 ; Example Output: #f
+
+; This will start id-dfs to start with a max depth of 1 ... n where n is list of length
+; It will return when it finds the first possible solution
+; If it iteratives through 1 .. n without finding a success state. It will return false
+
+(define (id-dfs-helper state-list counter max)
+    (cond 
+        (   ; Could not find solution
+            (> counter max)
+                #f
+        )
+        (   ; Found Solution
+            (not (null?  (ldfs state-list counter)))
+                (ldfs state-list counter)
+        )
+        (   ; Keep Iterating
+            #t
+                (id-dfs-helper state-list (+ counter 1) max)
+        )    
+    )
+)
+
 (define (id-dfs state-list)
-    (ldfs state-list (list-length state-list))
+    (id-dfs-helper state-list 1 (list-length state-list))
+)
+
+
+; ---------------------------- A* Functions -------------------------------
+; Definition of Heuristic - How close you are to a solution
+
+; My Heuristic - How "Sorted" are you? (I know... very Naive and simple .. with faults.. which I'll get to)
+
+; Given a list (A B C D), you earn 1 point for every neighbor you are actually adjacent to (via adjacency map)
+; here if (A B C D) is the goal state, it gets 6 points (since everybody was adjacent to each other)
+;       +  1 2 2 1    = 6 
+; Lets say B was ONLY adjacent to C   (also meaning A is not adjacent to B )
+;        (A B C D)
+;       + 0 1 2 1     = 4
+
+; Analyzing this heuristic I can already see its faults:
+;     - Doesn't work well if it requires "shifting"  
+;           i.e.    if (A B C D was the only goal state) (B C D A) will produce a high heuristic, but still cost a large
+;                   number of swaps to get it to the goal state still
+;     (meaning, if there are partial correctly "sorted" portions of the state. it will product a false-positive high heuristic)
+  
+
+; give-heuistic-point: returns 1 if adjacent, and 0 if it is not
+; Example Input: (give-heuistic-point 'California 'Oregon)
+; Exampme Output: 1
+
+(define (give-heuistic-point state1 state2)
+    (if (is-adjacent state1 state2)
+        1  ; is adjacent
+        0  ; not adjacent
+    )
+)
+(define (generate-heuristic-value-helper state-list index result)
+    (cond
+        (   ; Finished iterating across all elements in list
+            (> index (list-length state-list))
+                result 
+        )
+        (   ; first index   - since it only has a right neighbor
+            (= index 1)
+                (generate-heuristic-value-helper state-list (+ index 1) 
+                    (+ result (give-heuistic-point 
+                        (nth-item index state-list) 
+                        (nth-item (+ index 1) state-list)     
+                        ) 
+                    )
+                )
+        )
+        (   ; last index    - since it only has a left neighbor
+            (= index (list-length state-list))
+                (generate-heuristic-value-helper state-list (+ index 1) 
+                    (+ result (give-heuistic-point 
+                        (nth-item index state-list) 
+                        (nth-item (- index 1) state-list)     
+                        ) 
+                    )
+                )
+        )  
+        (   #t
+            ; anything in the middle
+                (generate-heuristic-value-helper state-list (+ index 1) 
+                    (+ 
+                        (+ result (give-heuistic-point 
+                            (nth-item index state-list) 
+                            (nth-item (- index 1) state-list)     
+                            ) 
+                        )
+                        (give-heuistic-point 
+                            (nth-item index state-list) 
+                            (nth-item (+ index 1) state-list)     
+                        ) 
+                        
+                    )
+                )
+        )
+    )
+)
+
+
+(define (generate-heuristic-value state-list)
+    (generate-heuristic-value-helper state-list 1 0)
+)
+
+; Example Input: (A*get-children '(California Oregon Washington) '() '((1 2)))
+; Example Output: ((((Oregon California Washington) ((1 2) (1 2))) 2) (((Washington Oregon California) ((1 3) (1 2))) 4) (((California Washington Oregon) ((2 3) (1 2))) 2))
+;
+(define (A*get-children-helper state-list swap-list children-list swap-state)
+    (cond
+        (
+            (null? swap-list)
+                children-list
+        )
+        (
+            #t
+                (A*get-children-helper 
+                    state-list 
+                    (cdr swap-list) 
+                    (cons (cons (cons (swap-element (nth-item 1 (car swap-list)) (nth-item 2 (car swap-list)) state-list)  
+                        (list(cons (car swap-list) swap-state))) 
+                            (list(generate-heuristic-value (swap-element (nth-item 1 (car swap-list)) (nth-item 2 (car swap-list)) state-list)))
+                            )
+                        children-list) 
+     
+                    swap-state
+                )
+        )
+    )
+)
+
+(define (A*get-children state-list result swap-state)
+    (A*get-children-helper state-list (possible-swaps (list-length state-list)) result swap-state)
+)
+
+
+; Assumption: list is unique! This only works to remove the first element
+; Assumption: dealing with numbers
+; Example Input: (remove-item 1 '(1 2 3))
+; Example Output: (2 3)
+(define (remove-item item alist)
+    (cond 
+        (   
+            (null? alist) 
+                '() 
+        )           
+        ( 
+            (equal? item (car alist) ) 
+                (cdr alist)
+        )
+        (   
+            #t 
+                (cons (car alist) (remove-item item (cdr alist) ))
+        ) 
+    )
+)
+
+; Example Input: (selection-sort '((((Oregon California Washington) ((1 2)(1 2))) 2) (((Washington Oregon California) ((1 3) (1 2))) 4) (((California Washington Oregon) ((2 3) (1 2))) 2)))
+; Example Output: ((((Oregon California Washington) ((1 2) (1 2))) 2) (((California WashingtonOregon) ((2 3) (1 2))) 2) (((Washington Oregon California) ((1 3) (1 2))) 4))
+(define (selection-sort alist) 
+    (cond 
+        ( 
+            (null? alist) 
+                '() 
+        )
+        ( 
+            #t 
+                (cons (smallest alist) (selection-sort (remove-item (smallest alist) alist)))
+        )
+    )
+)
+
+; Finds the smallest heuristic value of frontier. Used for Selection Sort   
+(define (smallest-helper min result alist)
+    (cond 
+        ( 
+            (null? alist) 
+                result
+        )
+        ( 
+            (> (nth-item 2 (car alist)) min) 
+                (smallest-helper (nth-item 2 (car alist)) (car alist) (cdr alist)))
+        (
+            #t 
+                (smallest-helper min result (cdr alist)  )
+        )
+    )
+)
+
+; Assumption: alist is not empty
+; input: Takes in the frontier
+(define (smallest alist) 
+    (smallest-helper (nth-item 2 (car alist)) (car alist) alist)
 )
 
 
 
+(define (A*-helper4 frontier max-depth state-history)
+    (cond 
+        (   ; FAILED: Exhausted the frontier. No more possible states to check. 
+            (null? frontier) 
+                '() 
+        )
+        (   ; SUCCESS: Found the goal state! Return the result
+            (is-goal-state (car (car frontier) )) ; Check the head of the frontier if it's the goal state
+                (list (car (car (car frontier))) (reverse (car(cdr (car (car frontier))))))
+        )
+        (   ; Already saw a state like this.. No need to add its children back into the frontier
+            (contains (car (car frontier)) state-history )
+                (A*-helper4  (cdr (car frontier)) max-depth  state-history )
+        )
+        (   ; Reached the Depth Limit. Check your neighbor child. (same as popping back to parent and checking 
+            ; your sibling)
+            (>= (list-length(car (cdr (car (car frontier))))) max-depth)
+                (A*-helper4  (cdr frontier) max-depth state-history)
+        )
+        (   ; Default Case: Find the children of the state you are in and append them to the frontier
+            #t 
+                (if (= (list-length(car (cdr (car (car frontier))))) max-depth)
+                    (A*-helper4  (cdr frontier) max-depth state-history)
+                    (A*-helper4 (selection-sort (append (append (A*get-children (car (car (car frontier))) '() (car(cdr (car (car frontier)))))) (cdr frontier)))
+                                 max-depth 
+                                 state-history)
+                                 ;(append (append (get-children (car (car frontier)) '(MARKER) (car(cdr (car frontier)))) ) (cdr frontier)) max-depth (+ counter 1) (cons (car (car frontier)) state-history) )
+
+                )
+        )
+    )
+)
+
+(define (A*-helper3 state-list max-depth)
+    (if (<= (list-length state-list) 1)
+        (list state-list '())
+        (A*-helper4 (A*get-children state-list '() '()) max-depth (list state-list))
+    )
+)
+
+
+(define (A*-helper state-list counter max)
+    (cond 
+        (   ; Could not find solution
+            (> counter max)
+                #f
+        )
+        (   ; Found Solution
+            (not (null?  (A*-helper3 state-list counter)))
+                (A*-helper3  state-list counter)
+        )
+        (   ; Keep Iterating
+            #t
+                (A*-helper state-list (+ counter 1) max)
+        )    
+    )
+)
+
+;(A* '(California Washington Idaho Arizona Oregon Montana Nevada ))
+; ((Montana Idaho Washington Oregon California Arizona Nevada) ((1 5) (4 6) (1 4) (2 3)))
+(define (A* state-list)
+    (A*-helper state-list 1 (list-length state-list))
+)
