@@ -285,8 +285,6 @@
     (is-goal-state-helper (car child))
 )
 
-; ldfs for limited depth first search 
-; helper function for ldfs. 
 ; Parameters:   frontier        = the queue of states to check
 ;               max-depth       = maximum depth (number of swaps) allowed to perform from given starting state
 ;               counter         = used to track the current depth 
@@ -297,7 +295,7 @@
 ;                  BAC    CBA    ACB  'MARKER   
 ;              /   |    \    
 ;            ABC  CBA   CBA 'MARKER
-(define (ldfs-helper frontier max-depth counter state-history)
+(define (id-dfs-helper3 frontier max-depth counter state-history)
     (cond 
         (   ; FAILED: Exhausted the frontier. No more possible states to check. 
             (null? frontier) 
@@ -305,7 +303,7 @@
         )
         (   ; Reached the End of an added children list. Pop back up 
             (equal? (car frontier) 'MARKER)
-                (ldfs-helper  (cdr frontier) max-depth (- counter 1) state-history)
+                (id-dfs-helper3  (cdr frontier) max-depth (- counter 1) state-history)
         )
         (   ; SUCCESS: Found the goal state! Return the result
             (is-goal-state (car frontier) ) ; Check the head of the frontier if it's the goal state
@@ -313,18 +311,18 @@
         )
         (   ; Already saw a state like this.. No need to add its children back into the frontier
             (contains (car (car frontier)) state-history )
-                (ldfs-helper  (cdr frontier) max-depth counter state-history )
+                (id-dfs-helper3  (cdr frontier) max-depth counter state-history )
         )
         (   ; Reached the Depth Limit. Check your neighbor child. (same as popping back to parent and checking 
             ; your sibling)
             (>= counter max-depth)
-                (ldfs-helper  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history) )
+                (id-dfs-helper3  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history) )
         )
         (   ; Default Case: Find the children of the state you are in and append them to the frontier
             #t 
                 (if (= counter max-depth)
-                    (ldfs-helper  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history))
-                    (ldfs-helper (append (append (get-children (car (car frontier)) '(MARKER) (car(cdr (car frontier)))) ) (cdr frontier)) max-depth (+ counter 1) (cons (car (car frontier)) state-history) )
+                    (id-dfs-helper3  (cdr frontier) max-depth counter (cons (car (car frontier)) state-history))
+                    (id-dfs-helper3 (append (append (get-children (car (car frontier)) '(MARKER) (car(cdr (car frontier)))) ) (cdr frontier)) max-depth (+ counter 1) (cons (car (car frontier)) state-history) )
                     
                 )
         )
@@ -332,21 +330,35 @@
 )
 
 
-; Example Input: (ldfs '(California Washington Oregon) 4)
+; Example Input: (id-dfs-helper2 '(California Washington Oregon) 4)
 ; Example Output: ((California Oregon Washington) ((1 2) (1 3) (1 2)))
 
-; Example Input: (ldfs '(California Washington Idaho Arizona Oregon Montana) 5)
+; Example Input: (id-dfs-helper2 '(California Washington Idaho Arizona Oregon Montana) 5)
 ; Example Output: ((Arizona California Oregon Washington Idaho Montana) ((1 2) (1 4) (1 5) (1 3) (1 5)))
 
-; Example Input: (ldfs '(California Washington Idaho Arizona Oregon Montana Florida) 5)
+; Example Input: (id-dfs-helper2 '(California Washington Idaho Arizona Oregon Montana Florida) 5)
 ; Example Output: #f
 
+; This is used to handle cases when states length <=1
 ; Example Input: (id-dfs '(California))
 ; Example Output: ((California) ())
-(define (ldfs state-list max-depth)
-    (if (<= (list-length state-list) 1)
-        (list state-list '())
-        (ldfs-helper (get-children state-list '() '()) max-depth 1 (list state-list))
+(define (id-dfs-helper2 state-list max-depth)
+    (cond 
+        (
+            (<= (list-length state-list) 1)
+                (list state-list '())
+        )
+        (
+            (= (list-length state-list) 2)
+                (if (is-adjacent (car state-list) (car (cdr state-list)))
+                    (list state-list '())
+                    '() ; 
+                )
+        )
+        (
+            #t
+                (id-dfs-helper3 (get-children state-list '() '()) max-depth 1 (list state-list))
+        )
     )
 )
 
@@ -369,14 +381,6 @@
 ; I would start from list-length, if I find a result. Increment down until you get your first #f. Last success (minimal depth needed)
 ; will be the optimal in terms of swap.. but seems very costly. I guess thats why we need heuristics (to not exhaustively search)
 
-; Example Input: (id-dfs '(California Washington Oregon))
-; Example Output: ((California Oregon Washington) ((1 2) (1 3) (1 2)))
-
-; Example Input: (id-dfs '(California Washington Idaho Arizona Oregon Montana))
-; Example Output: ((Arizona California Oregon Washington Idaho Montana) ((1 2) (1 4) (1 5) (1 3) (1 5)))
-
-; Example Input: (id-dfs '(California Washington Idaho Arizona Oregon Montana Florida))
-; Example Output: #f
 
 ; This will start id-dfs to start with a max depth of 1 ... n where n is list of length
 ; It will return when it finds the first possible solution
@@ -389,8 +393,8 @@
                 #f
         )
         (   ; Found Solution
-            (not (null?  (ldfs state-list counter)))
-                (ldfs state-list counter)
+            (not (null?  (id-dfs-helper2 state-list counter)))
+                (id-dfs-helper2 state-list counter)
         )
         (   ; Keep Iterating
             #t
@@ -399,6 +403,14 @@
     )
 )
 
+; Example Input: (id-dfs '(California Washington Oregon))
+; Example Output: ((California Oregon Washington) ((1 2) (1 3) (1 2)))
+
+; Example Input: (id-dfs '(California Washington Idaho Arizona Oregon Montana))
+; Example Output: ((Arizona California Oregon Washington Idaho Montana) ((1 2) (1 4) (1 5) (1 3) (1 5)))
+
+; Example Input: (id-dfs '(California Washington Idaho Arizona Oregon Montana Florida))
+; Example Output: #f
 (define (id-dfs state-list)
     (id-dfs-helper state-list 1 (list-length state-list))
 )
@@ -617,9 +629,22 @@
 
 ; Used to check whether or not state list has length <= 1
 (define (A*-helper2 state-list max-depth)
-    (if (<= (list-length state-list) 1)
-        (list state-list '())
-        (A*-helper3 (A*get-children state-list '() '()) max-depth (list state-list))
+    (cond 
+        (
+            (<= (list-length state-list) 1)
+                (list state-list '())
+        )
+        (
+            (= (list-length state-list) 2)
+                (if (is-adjacent (car state-list) (car (cdr state-list)))
+                    (list state-list '())
+                    '() ; 
+                )
+        )
+        (
+            #t
+                (A*-helper3 (A*get-children state-list '() '()) max-depth (list state-list))
+        )
     )
 )
 
