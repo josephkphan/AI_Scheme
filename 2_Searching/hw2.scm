@@ -351,7 +351,7 @@
 )
 
 ; Rationale for list-length for max-depth: This is under the rationale that. in the worst case solution and given
-; that there is a solution, you can ALWAYS solve the problem in n swaps (n beigng length). It is under the same rationale 
+; that there is a solution, you can ALWAYS solve the problem in n swaps (n being length). It is under the same rationale 
 ; as selection sort. It takes 1 swap to put a state into its correct state. With the max depth being length, I believe
 ; dfs should be able to encapsulate this scenario. Hopefully I'm right :)... Fingers crossed. This is my own thoughts.
 ; no math to prove it. sorry. 
@@ -360,6 +360,10 @@
 ; My Initial Thoughts: Initially I thought it may have needed to be the permutation for max depth since this 
 ; would cover every literal combination possible. AND it would still work! I just think the length... may be 
 ; a the best minimum value to cover everything... (hopefully I'm right)
+
+; EDIT: 
+; Turns out you only need length -1 (as specified from email from professor)
+; Doesn't hurt to leave it at n. theoretically it will still find a solution there. 
 
 ; TO BE OPTIMAL (Minimal Amount of Swaps):
 ; I would start from list-length, if I find a result. Increment down until you get your first #f. Last success (minimal depth needed)
@@ -419,11 +423,11 @@
 ;     (meaning, if there are partial correctly "sorted" portions of the state. it will product a false-positive high heuristic)
   
 
-; give-heuistic-point: returns 1 if adjacent, and 0 if it is not
-; Example Input: (give-heuistic-point 'California 'Oregon)
+; give-heuristic-point: returns 1 if adjacent, and 0 if it is not
+; Example Input: (give-heuristic-point 'California 'Oregon)
 ; Exampme Output: 1
 
-(define (give-heuistic-point state1 state2)
+(define (give-heuristic-point state1 state2)
     (if (is-adjacent state1 state2)
         1  ; is adjacent
         0  ; not adjacent
@@ -438,7 +442,7 @@
         (   ; first index   - since it only has a right neighbor
             (= index 1)
                 (generate-heuristic-value-helper state-list (+ index 1) 
-                    (+ result (give-heuistic-point 
+                    (+ result (give-heuristic-point 
                         (nth-item index state-list) 
                         (nth-item (+ index 1) state-list)     
                         ) 
@@ -448,7 +452,7 @@
         (   ; last index    - since it only has a left neighbor
             (= index (list-length state-list))
                 (generate-heuristic-value-helper state-list (+ index 1) 
-                    (+ result (give-heuistic-point 
+                    (+ result (give-heuristic-point 
                         (nth-item index state-list) 
                         (nth-item (- index 1) state-list)     
                         ) 
@@ -459,12 +463,12 @@
             ; anything in the middle
                 (generate-heuristic-value-helper state-list (+ index 1) 
                     (+ 
-                        (+ result (give-heuistic-point 
+                        (+ result (give-heuristic-point 
                             (nth-item index state-list) 
                             (nth-item (- index 1) state-list)     
                             ) 
                         )
-                        (give-heuistic-point 
+                        (give-heuristic-point 
                             (nth-item index state-list) 
                             (nth-item (+ index 1) state-list)     
                         ) 
@@ -475,14 +479,16 @@
     )
 )
 
-
+; generate-heuristic-value: Given a state's list, it will produce a heuristic value
+; Example input:
+; Example output:
 (define (generate-heuristic-value state-list)
     (generate-heuristic-value-helper state-list 1 0)
 )
 
+; A*get-children-helper; just like get-children helper, BUT adds the heuristic value to the child (see output example)
 ; Example Input: (A*get-children '(California Oregon Washington) '() '((1 2)))
 ; Example Output: ((((Oregon California Washington) ((1 2) (1 2))) 2) (((Washington Oregon California) ((1 3) (1 2))) 4) (((California Washington Oregon) ((2 3) (1 2))) 2))
-;
 (define (A*get-children-helper state-list swap-list children-list swap-state)
     (cond
         (
@@ -532,6 +538,7 @@
     )
 )
 
+; Selection sort to get the biggest child from the frontier
 ; Example Input: (selection-sort '((((Oregon California Washington) ((1 2)(1 2))) 2) (((Washington Oregon California) ((1 3) (1 2))) 4) (((California Washington Oregon) ((2 3) (1 2))) 2)))
 ; Example Output: ((((Oregon California Washington) ((1 2) (1 2))) 2) (((California WashingtonOregon) ((2 3) (1 2))) 2) (((Washington Oregon California) ((1 3) (1 2))) 4))
 (define (selection-sort alist) 
@@ -542,13 +549,13 @@
         )
         ( 
             #t 
-                (cons (smallest alist) (selection-sort (remove-item (smallest alist) alist)))
+                (cons (biggest alist) (selection-sort (remove-item (biggest alist) alist)))
         )
     )
 )
 
-; Finds the smallest heuristic value of frontier. Used for Selection Sort   
-(define (smallest-helper min result alist)
+; Finds the biggest heuristic value of frontier. Used for Selection Sort   
+(define (biggest-helper min result alist)
     (cond 
         ( 
             (null? alist) 
@@ -556,23 +563,26 @@
         )
         ( 
             (> (nth-item 2 (car alist)) min) 
-                (smallest-helper (nth-item 2 (car alist)) (car alist) (cdr alist)))
+                (biggest-helper (nth-item 2 (car alist)) (car alist) (cdr alist)))
         (
             #t 
-                (smallest-helper min result (cdr alist)  )
+                (biggest-helper min result (cdr alist)  )
         )
     )
 )
 
+; biggest - returns the item in the list with the biggest heuristic value
 ; Assumption: alist is not empty
 ; input: Takes in the frontier
-(define (smallest alist) 
-    (smallest-helper (nth-item 2 (car alist)) (car alist) alist)
+(define (biggest alist) 
+    (biggest-helper (nth-item 2 (car alist)) (car alist) alist)
 )
 
 
-
-(define (A*-helper4 frontier max-depth state-history)
+; Algorithm for A* 
+; Note that upon get children creation - when adding it to the frontier- it is then shorting the frontier from 
+; largest to biggest. That way the head of the list is the child with the highest heuristic value
+(define (A*-helper3 frontier max-depth state-history)
     (cond 
         (   ; FAILED: Exhausted the frontier. No more possible states to check. 
             (null? frontier) 
@@ -584,18 +594,18 @@
         )
         (   ; Already saw a state like this.. No need to add its children back into the frontier
             (contains (car (car frontier)) state-history )
-                (A*-helper4  (cdr (car frontier)) max-depth  state-history )
+                (A*-helper3  (cdr (car frontier)) max-depth  state-history )
         )
         (   ; Reached the Depth Limit. Check your neighbor child. (same as popping back to parent and checking 
             ; your sibling)
             (>= (list-length(car (cdr (car (car frontier))))) max-depth)
-                (A*-helper4  (cdr frontier) max-depth state-history)
+                (A*-helper3  (cdr frontier) max-depth state-history)
         )
         (   ; Default Case: Find the children of the state you are in and append them to the frontier
             #t 
                 (if (= (list-length(car (cdr (car (car frontier))))) max-depth)
-                    (A*-helper4  (cdr frontier) max-depth state-history)
-                    (A*-helper4 (selection-sort (append (append (A*get-children (car (car (car frontier))) '() (car(cdr (car (car frontier)))))) (cdr frontier)))
+                    (A*-helper3  (cdr frontier) max-depth state-history)
+                    (A*-helper3 (selection-sort (append (append (A*get-children (car (car (car frontier))) '() (car(cdr (car (car frontier)))))) (cdr frontier)))
                                  max-depth 
                                  state-history)
                                  ;(append (append (get-children (car (car frontier)) '(MARKER) (car(cdr (car frontier)))) ) (cdr frontier)) max-depth (+ counter 1) (cons (car (car frontier)) state-history) )
@@ -605,14 +615,15 @@
     )
 )
 
-(define (A*-helper3 state-list max-depth)
+; Used to check whether or not state list has length <= 1
+(define (A*-helper2 state-list max-depth)
     (if (<= (list-length state-list) 1)
         (list state-list '())
-        (A*-helper4 (A*get-children state-list '() '()) max-depth (list state-list))
+        (A*-helper3 (A*get-children state-list '() '()) max-depth (list state-list))
     )
 )
 
-
+; Used to iterate through the different depths
 (define (A*-helper state-list counter max)
     (cond 
         (   ; Could not find solution
@@ -620,8 +631,8 @@
                 #f
         )
         (   ; Found Solution
-            (not (null?  (A*-helper3 state-list counter)))
-                (A*-helper3  state-list counter)
+            (not (null?  (A*-helper2 state-list counter)))
+                (A*-helper2  state-list counter)
         )
         (   ; Keep Iterating
             #t
@@ -630,8 +641,8 @@
     )
 )
 
-;(A* '(California Washington Idaho Arizona Oregon Montana Nevada ))
-; ((Montana Idaho Washington Oregon California Arizona Nevada) ((1 5) (4 6) (1 4) (2 3)))
+; Example Input: (A* '(California Washington Idaho Arizona Oregon Montana Nevada ))
+; Example Output: ((Montana Idaho Washington Oregon California Arizona Nevada) ((1 5) (4 6) (1 4) (2 3)))
 (define (A* state-list)
     (A*-helper state-list 1 (list-length state-list))
 )
