@@ -339,7 +339,7 @@
 ; Example Input: (id-dfs-helper2 '(California Washington Idaho Arizona Oregon Montana Florida) 5)
 ; Example Output: #f
 
-; This is used to handle cases when states length <=1
+; This is used to handle cases when states length <=2
 ; Example Input: (id-dfs '(California))
 ; Example Output: ((California) ())
 (define (id-dfs-helper2 state-list max-depth)
@@ -627,7 +627,7 @@
     )
 )
 
-; Used to check whether or not state list has length <= 1
+; Used to check whether or not state list has length <= 2
 (define (A*-helper2 state-list max-depth)
     (cond 
         (
