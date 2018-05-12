@@ -156,7 +156,6 @@
             )
             (
                 #t
-                    (display "HERE")
                     #f
             )
         )
@@ -214,10 +213,6 @@
 
 ; Returns either #t or UNKNOWN 
 (define (ask-helper frontier original-ask)
-  (display "----------------------------------------------------") (newline)
-  (display "TKB:             ") (display TKB) (newline)
-  (display "Frontier:        ") (display frontier) (newline)
-  (display "original-ask:    ") (display original-ask) (newline) (newline)
   (cond
     (   ; Exhausted frontier = No Contradictions found! 
         (null? frontier)
@@ -225,19 +220,13 @@
     )
     (   ; Was able to resolve a new sentence
         (list? (resolve (nth-item (car (car frontier)) TKB) (nth-item (car (cdr (car frontier))) TKB)  ))
-        (display "Resolving:       ")(display (car frontier)) (newline)
-        (display "sentence1:       ")(display (nth-item (car (car frontier)) TKB)) (newline)
-        (display "sentence2:       ")(display (nth-item (car (cdr (car frontier))) TKB)) (newline)
-        (display "Resolved Result: ")(display (resolve (nth-item (car (car frontier)) TKB) (nth-item (car (cdr (car frontier))) TKB)  )) (newline)
         (cond
             (   ; Found a Contradiction
                 (equal? original-ask (resolve (nth-item (car (car frontier)) TKB) (nth-item (car (cdr (car frontier))) TKB)  ))
-                    (display "contradiction!") (newline)
                     #t
             )
             (   ; No contradiction found, New sentence added, expand frontier & keep searching
                 #t
-                    (display "New Resolved Sentence! ") (newline)
                     (tell-TKB (resolve (nth-item (car (car frontier)) TKB) (nth-item (car (cdr (car frontier))) TKB)  ))
                     (ask-helper (expand-frontier (cdr frontier) TKB) original-ask)
             )
@@ -245,9 +234,6 @@
     )
     (   ; Two sentences were unresolveable. continue through frontier
         #t 
-            (display (nth-item (car (car frontier)) TKB)) (newline)
-            (display (nth-item (car (cdr (car frontier))) TKB)) (newline)
-            (display "Unable to Resolve") (newline)
             (ask-helper (cdr frontier) original-ask)
     )
   )
@@ -302,12 +288,3 @@
 (define (expand-frontier frontier alist )
     (expand-frontier-helper frontier 1 (length alist))
 )
-
-
-
-(tell '((NOT a) b))
-(tell '((NOT b) c))
-(tell '(a))
-(ask '(a))
-(ask '(c))
-(ask '(d))
