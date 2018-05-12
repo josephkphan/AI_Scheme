@@ -176,6 +176,7 @@
 ; This concats the list into the knowledge base
 (define (tell alist)
   (set! KB (reverse (cons alist (reverse KB) )))
+  (display "OK") (newline)
 )
 
 (define (tell-TKB alist)
@@ -193,6 +194,24 @@
   )                         
 )
 
+(define (contains item alist)
+  (cond 
+    (
+        (null? alist)
+            #f
+    )
+    (
+        (equal? item (car alist))
+            #t
+    )
+    (
+        #t
+        (contains item (cdr alist))
+    )
+    
+  )
+)
+
 ; Returns either #t or UNKNOWN 
 (define (ask-helper frontier original-ask)
   (display "----------------------------------------------------") (newline)
@@ -202,7 +221,7 @@
   (cond
     (   ; Exhausted frontier = No Contradictions found! 
         (null? frontier)
-        #t
+        'UNKNOWN
     )
     (   ; Was able to resolve a new sentence
         (list? (resolve (nth-item (car (car frontier)) TKB) (nth-item (car (cdr (car frontier))) TKB)  ))
@@ -214,7 +233,7 @@
             (   ; Found a Contradiction
                 (equal? original-ask (resolve (nth-item (car (car frontier)) TKB) (nth-item (car (cdr (car frontier))) TKB)  ))
                     (display "contradiction!") (newline)
-                    'UNKNOWN
+                    #t
             )
             (   ; No contradiction found, New sentence added, expand frontier & keep searching
                 #t
@@ -237,8 +256,10 @@
 (define (ask alist)
   (set! TKB KB)
   (tell-TKB (inverse-of alist))
-  (ask-helper (create-frontier TKB) alist)
-
+  (if (contains alist TKB)
+        #t
+        (ask-helper (create-frontier TKB) alist)
+  )
 )
 
 
