@@ -163,4 +163,130 @@
     )
 )
 
+; ------------------------------- Intermediate Assignment -----------------------------------
+(define (nth-item n alist)
+    (if (= n 1) (car alist) (nth-item (- n 1) (cdr alist))) 
+)
 
+; KB = knowledgebase
+(define KB '())
+
+(define TKB '())
+
+; This concats the list into the knowledge base
+(define (tell alist)
+  (set! KB (reverse (cons alist (reverse KB) )))
+)
+
+(define (tell-TKB alist)
+  (set! TKB (reverse (cons alist (reverse TKB) )))
+)
+
+;(inverse-of '((NOT A)))
+;(A)
+;(inverse-of '(A))
+;(NOT A)
+(define (inverse-of alist)
+  (if (next-is-inverse alist)
+    (list (next alist))
+    (cons 'NOT alist)
+  )                         
+)
+
+; Returns either #t or UNKNOWN 
+(define (ask-helper frontier original-ask)
+  (display "----------------------------------------------------") (newline)
+  (display "TKB:             ") (display TKB) (newline)
+  (display "Frontier:        ") (display frontier) (newline)
+  (display "original-ask:    ") (display original-ask) (newline) (newline)
+  (cond
+    (   ; Exhausted frontier = No Contradictions found! 
+        (null? frontier)
+        #t
+    )
+    (   ; Was able to resolve a new sentence
+        (list? (resolve (nth-item (car (car frontier)) TKB) (nth-item (car (cdr (car frontier))) TKB)  ))
+        (display "Resolving:       ")(display (car frontier)) (newline)
+        (display "sentence1:       ")(display (nth-item (car (car frontier)) TKB)) (newline)
+        (display "sentence2:       ")(display (nth-item (car (cdr (car frontier))) TKB)) (newline)
+        (display "Resolved Result: ")(display (resolve (nth-item (car (car frontier)) TKB) (nth-item (car (cdr (car frontier))) TKB)  )) (newline)
+        (cond
+            (   ; Found a Contradiction
+                (equal? original-ask (resolve (nth-item (car (car frontier)) TKB) (nth-item (car (cdr (car frontier))) TKB)  ))
+                    (display "contradiction!") (newline)
+                    'UNKNOWN
+            )
+            (   ; No contradiction found, New sentence added, expand frontier & keep searching
+                #t
+                    (display "New Resolved Sentence! ") (newline)
+                    (tell-TKB (resolve (nth-item (car (car frontier)) TKB) (nth-item (car (cdr (car frontier))) TKB)  ))
+                    (ask-helper (expand-frontier (cdr frontier) TKB) original-ask)
+            )
+        )
+    )
+    (   ; Two sentences were unresolveable. continue through frontier
+        #t 
+            (display (nth-item (car (car frontier)) TKB)) (newline)
+            (display (nth-item (car (cdr (car frontier))) TKB)) (newline)
+            (display "Unable to Resolve") (newline)
+            (ask-helper (cdr frontier) original-ask)
+    )
+  )
+)
+
+(define (ask alist)
+  (set! TKB KB)
+  (tell-TKB (inverse-of alist))
+  (ask-helper (create-frontier TKB) alist)
+
+)
+
+
+; helper function for possible-swaps
+; Algorithm :    The function will swap the first element with everybody else down the list 
+;                It will then swap the next element with everybody else down the list. and so on until it
+;                reaches the end of the list. Instead of swapping. its saving the indexes of what will be swapped
+(define (create-frontier-helper list-length swap1 swap2 swap-list)
+    (cond
+        (
+            (equal? swap2 list-length)
+                (create-frontier-helper list-length (+ swap1 1)  (+ swap1 2) (cons (list swap1 swap2) swap-list ))
+        )
+        (
+            (> swap2 list-length)
+                swap-list
+        )
+        (
+            #t
+                (create-frontier-helper list-length swap1  (+ swap2 1) (cons (list swap1 swap2) swap-list ))
+        )
+    )
+)
+
+; possible-swaps: returns a list of the possible combination of swaps using the indexes of the list
+; Example Input: (create-frontier 5)
+; Example Output: ((1 2) (1 3) (1 4) (1 5) (2 3) (2 4) (2 5) (3 4) (3 5) (4 5))
+(define (create-frontier alist)
+    (reverse (create-frontier-helper (length alist) 1 2 '()))
+)
+
+(define (expand-frontier-helper frontier a list-length )
+    (if (< a list-length)
+        (expand-frontier-helper  (reverse (cons  (list a list-length) (reverse frontier))) (+ a 1) list-length)
+        frontier
+    )
+)
+;(expand-frontier '() '(A B C D E F))
+;((1 6) (2 6) (3 6) (4 6) (5 6))
+(define (expand-frontier frontier alist )
+    (expand-frontier-helper frontier 1 (length alist))
+)
+
+
+
+(tell '((NOT a) b))
+(tell '((NOT b) c))
+(tell '(a))
+(ask '(a))
+(ask '(c))
+(ask '(d))
