@@ -163,23 +163,16 @@
 )
 
 ; ------------------------------- Intermediate Assignment -----------------------------------
+;This is an implement a propositional logic solver that accepts
+;statements in CNF and then performs resolution to answer propositional logic questions. For
+;this assignment, your solver should implement a tell and ask interface on top of the resolver
+;from the basic assignment, using the same syntax for disjunctive statements. The ask function
+;should return #t for a statement that can be inferred, or UNKNOWN otherwise.
+
+; ----- Needed Functions 
+; returns the nth item from the list
 (define (nth-item n alist)
     (if (= n 1) (car alist) (nth-item (- n 1) (cdr alist))) 
-)
-
-; KB = knowledgebase
-(define KB '())
-
-(define TKB '())
-
-; This concats the list into the knowledge base
-(define (tell alist)
-  (set! KB (reverse (cons alist (reverse KB) )))
-  (display "OK") (newline)
-)
-
-(define (tell-TKB alist)
-  (set! TKB (reverse (cons alist (reverse TKB) )))
 )
 
 ;(inverse-of '((NOT A)))
@@ -193,6 +186,7 @@
   )                         
 )
 
+; returns a boolean if the item is in the list.
 (define (contains item alist)
   (cond 
     (
@@ -210,6 +204,65 @@
     
   )
 )
+
+
+; helper function for create-frontier
+; Algorithm :    The function will "resolve" the first element with everybody else down the list 
+;                It will then "resolve" the next element with everybody else down the list. and so on until it
+;                reaches the end of the list. Instead of performing resolutions. its saving the indexes of what will be resolved
+(define (create-frontier-helper list-length swap1 swap2 swap-list)
+    (cond
+        (
+            (equal? swap2 list-length)
+                (create-frontier-helper list-length (+ swap1 1)  (+ swap1 2) (cons (list swap1 swap2) swap-list ))
+        )
+        (
+            (> swap2 list-length)
+                swap-list
+        )
+        (
+            #t
+                (create-frontier-helper list-length swap1  (+ swap2 1) (cons (list swap1 swap2) swap-list ))
+        )
+    )
+)
+
+; possible-swaps: returns a list of the possible combination of resolutions using the indexes of the list
+; Example Input: (create-frontier '(A B C D E))
+; Example Output: ((1 2) (1 3) (1 4) (1 5) (2 3) (2 4) (2 5) (3 4) (3 5) (4 5))
+(define (create-frontier alist)
+    (reverse (create-frontier-helper (length alist) 1 2 '()))
+)
+
+(define (expand-frontier-helper frontier a list-length )
+    (if (< a list-length)
+        (expand-frontier-helper  (reverse (cons  (list a list-length) (reverse frontier))) (+ a 1) list-length)
+        frontier
+    )
+)
+;(expand-frontier '() '(A B C D E F))
+;((1 6) (2 6) (3 6) (4 6) (5 6))
+(define (expand-frontier frontier alist )
+    (expand-frontier-helper frontier 1 (length alist))
+)
+
+
+; ----- Key  Functions 
+; KB = knowledgebase
+(define KB '())
+
+(define TKB '())
+
+; This concats the list into the knowledge base
+(define (tell alist)
+  (set! KB (reverse (cons alist (reverse KB) )))
+  (display "OK") (newline)
+)
+
+(define (tell-TKB alist)
+  (set! TKB (reverse (cons alist (reverse TKB) )))
+)
+
 
 ; Returns either #t or UNKNOWN 
 (define (ask-helper frontier original-ask)
@@ -239,6 +292,12 @@
   )
 )
 
+;(tell '((NOT a) b))
+;(tell '((NOT b) c))
+;(tell '(a))
+;(ask '(a))
+;(ask '(c))
+;(ask '(d))
 (define (ask alist)
   (set! TKB KB)
   (tell-TKB (inverse-of alist))
@@ -248,43 +307,3 @@
   )
 )
 
-
-; helper function for possible-swaps
-; Algorithm :    The function will swap the first element with everybody else down the list 
-;                It will then swap the next element with everybody else down the list. and so on until it
-;                reaches the end of the list. Instead of swapping. its saving the indexes of what will be swapped
-(define (create-frontier-helper list-length swap1 swap2 swap-list)
-    (cond
-        (
-            (equal? swap2 list-length)
-                (create-frontier-helper list-length (+ swap1 1)  (+ swap1 2) (cons (list swap1 swap2) swap-list ))
-        )
-        (
-            (> swap2 list-length)
-                swap-list
-        )
-        (
-            #t
-                (create-frontier-helper list-length swap1  (+ swap2 1) (cons (list swap1 swap2) swap-list ))
-        )
-    )
-)
-
-; possible-swaps: returns a list of the possible combination of swaps using the indexes of the list
-; Example Input: (create-frontier 5)
-; Example Output: ((1 2) (1 3) (1 4) (1 5) (2 3) (2 4) (2 5) (3 4) (3 5) (4 5))
-(define (create-frontier alist)
-    (reverse (create-frontier-helper (length alist) 1 2 '()))
-)
-
-(define (expand-frontier-helper frontier a list-length )
-    (if (< a list-length)
-        (expand-frontier-helper  (reverse (cons  (list a list-length) (reverse frontier))) (+ a 1) list-length)
-        frontier
-    )
-)
-;(expand-frontier '() '(A B C D E F))
-;((1 6) (2 6) (3 6) (4 6) (5 6))
-(define (expand-frontier frontier alist )
-    (expand-frontier-helper frontier 1 (length alist))
-)
