@@ -54,16 +54,16 @@
 ; Overall Prities:
 ; * Don't move too far, go for low hanging fruit always (nearby vegetation)
 ; 
-; * Avoid Predators.. unless theres food nearby. meaning turn away from them  
+; * If you got attacked. Run!  
 ; 
-; * If you turn, you have to move forward. Rationale. you turned in search for more food
-;   or to avoid a predator. so move forward one if you turned 
+; * If you moved, and you don't a vegetation in front of you. Turn. This means you are either. 
+;       1. running away from a predator
+;       2. went to go looking for food, but it is now our of your field of vision
 ; 
-; * Be aggressive for nearby barriers. If there is food nearby. Make the most aggresive move with
-;   a positive net gain. 
+; * Be aggressive for nearby agents when moving to a guarenteed food spot. Meaning, if food is
+;   directly in front of you (straight line path), Rush to get there as it's the highest percentage to gain vegetation
 ;
-; * If current energy falls below a certain threshold. spend remaining energy trying to NOT DIE. 
-; - avoiding predators, and staying in place, unless vegetation < 2 moves away
+; * If current energy falls below a certain threshold. just sit... and stall to gain more "turns" before death
 
 (define (initialize-agent)
         "OK"
@@ -73,11 +73,24 @@
 
 
 ; ----------------------------------------------------------
+
 (define (is-vegetation percepts coordinate) 
       (let ((coordinate-value (get-location percepts (car coordinate) (car (cdr coordinate))) ))
             (and 
                   (list? coordinate-value)   
                   (equal? (car coordinate-value) 'vegetation)
+            )
+      )
+)
+
+(define (is-valuable-vegetation percepts coordinate) 
+      (let ((coordinate-value (get-location percepts (car coordinate) (car (cdr coordinate))) ))
+            (and 
+                  (and 
+                        (list? coordinate-value)   
+                        (equal? (car coordinate-value) 'vegetation)
+                  )
+                  (> (nth-item 3 coordinate-value) 50)
             )
       )
 )
@@ -111,8 +124,8 @@
 
 ; ----------------------------------------------------------
 
-(define (is-vegetation-in-front percepts)
-      (is-vegetation percepts '(0 1)) 
+(define (is-valuable-vegetation-in-front percepts)
+      (is-valuable-vegetation percepts '(0 1)) 
 )
 
 ; The function is called when choosing Move forward. It will determine how aggresive to be.
@@ -163,7 +176,7 @@
                   #f
             )
             (
-                  (equal? (car previous-events) 'attacked-by)
+                  (equal? (car (car previous-events)) 'attacked-by)
                   #t
             )
             (
@@ -180,7 +193,7 @@
                   #f
             )
             (
-                  (equal? (car previous-events) 'moved)
+                  (equal? (car (car previous-events)) 'moved)
                   #t
             )
             (
@@ -200,7 +213,7 @@
 ; () no vegetation found.
 
  
-(define percept-coordinates-list '(
+(define vegetation-percept-coordinates-list '(
       (-1 1) (1 1) 
       (-1 2) (0 2) (1 2)
       (-1 3) (0 3) (1 3)
@@ -212,7 +225,9 @@
       (cond 
             (
                   (= (car coordinate) 0)
-                  (string-append "MOVE-AGGRESSIVE-" (number->string (- (car (cdr coordinate)))))
+                  (string-append "MOVE-PASSIVE-" (number->string (- (car (cdr coordinate)))))
+                  ;(string-append "MOVE-AGGRESSIVE-" (number->string (- (car (cdr coordinate)))))
+
             )
             (
                   (= (car (cdr coordinate)) 1)
@@ -244,31 +259,31 @@
                   '()
       )
       (
-            (is-vegetation percepts (car coordinate-list))
-                  (display (car coordinate-list))(newline)
+            (is-valuable-vegetation percepts (car coordinate-list))
+                  ;(display (car coordinate-list))(newline)
                   ;(get-location percepts (car (car coordinate-list)) (car (cdr (car coordinate-list))))
                   (car coordinate-list)
       )
       (     
             #t
-                  (nearby-vegetation-helper current-energy percepts (cdr coordinate-list))
+                  (get-nearby-vegetation-coordinate percepts (cdr coordinate-list))
       )
   )
 )
 
-(define (is-vegetation-nearby percepts coordinate-list)
+(define (is-valuable-vegetation-nearby percepts coordinate-list)
       (cond 
             ( 
                   (null? coordinate-list)
                         #f
             )
             (
-                  (is-vegetation percepts (car coordinate-list))
+                  (is-valuable-vegetation percepts (car coordinate-list))
                         #t
             )
             (     
                   #t
-                        (nearby-vegetation-helper current-energy percepts (cdr coordinate-list))
+                        (is-valuable-vegetation-nearby percepts (cdr coordinate-list))
             )
       )
 )
@@ -278,18 +293,15 @@
 
 ; ----------------------------------------------------------
 
-; If a predator is nearby, move turn to the opposite direction
-; Possible return values
-; () no predators nearby
-;  P1  P1  P2  P3  P3 
-;      P1  P2  P3
-;          A
-; Predator found at position P1 = Return (TURN-RIGHT)
-; Predator found at position P2 = Return (TURN-AROUND)
-; Predator found at position P3 = Return (TURN-LEFT)
-; (define (predator-nearby? current-energy)
-;       (display "predator-nearby?\n:")
-; )
+; Run AWay
+
+(define (determine-run-away-strategy percepts)
+      (if   
+            (or (is-predator percepts '(0 1)) (is-vegetation percepts '(0 1)  ))
+            "TURN-RIGHT"
+            "MOVE-PASSIVE-3"
+      )
+)
 
 
 
@@ -306,15 +318,21 @@
 ; If any Barriers are found at position B, eat aggresively (given the available energy)
 
 (define (choose-action current-energy previous-events percepts)
-(display percepts)
+(display "-------------------------------------------")(newline)
+(display "current-energy:           ")(display current-energy)(newline)
+(display "previous-events:          ")(display previous-events)(newline)
+(display "Percepts:                 ")(display percepts)(newline)
+(display "Making Move:              ")(display "MOVE")(newline)
       (cond 
             (
                   ;Out of Energy... Game Over. Sit til you die.
                   (< current-energy 20)
-                  "STAY"
+                  (display "!!!LOW-ENERGY \n")
+                  "MOVE-PASSIVE-1"
             )
             (     ; Vegetation is in front of you. Eat!!
-                  (is-vegetation-in-front percepts)
+                  (is-valuable-vegetation-in-front percepts)
+                  (display "!!!EAT \n")
                   (if (is-barrier-next-to-vegetation percepts)
                         "EAT-AGGRESSIVE"
                         "EAT-PASSIVE"
@@ -322,7 +340,8 @@
             )
             (     ; You moved last turn..This means you are searching for food. Look around! 
                   (is-last-event-move previous-events)
-                  (let ((rand (random 1)))
+                  (display "!!!TURN \n")
+                  (let ((rand (random 2)))
                         (cond ((equal? rand 0) "TURN-RIGHT")
                               ((equal? rand 1) "TURN-LEFT")
                               (#f "STAY")
@@ -330,27 +349,28 @@
                   )
             )
             (
-                  (is-vegetation-nearby percepts coordinate-list)
-                  (determine-move-to-vegetation (get-nearby-vegetation-coordinate percepts coordinate-list))
+                  (is-valuable-vegetation-nearby percepts vegetation-percept-coordinates-list)
+                  (display "!!!FOOD \n")
+                  (determine-move-to-vegetation (get-nearby-vegetation-coordinate percepts vegetation-percept-coordinates-list))
                   ; Go move toward food 
             )
             (
                   (is-last-event-attacked previous-events)
-                  (if (is-predator percepts '(0 1))
-                        "MOVE-AGGRESSIVE-3"
-                        "MOVE-AGGRESSIVE-2"
-                  )
+                  (display "!!!ATTACKED \n")
+                  (determine-run-away-strategy percepts)
                   
                   ; Got attacked, and no new food to go to? still gotta GTFO for safety
                   ; This prays that the 
             )
             (
                   #t ; Look around for better things
-                  (let ((rand (random 4)))
+                  (display "!!!RANDOM \n")
+                  (let ((rand (random 5)))
                         (cond ((equal? rand 0) "TURN-RIGHT")
                               ((equal? rand 1) "TURN-LEFT")
                               ((equal? rand 2) "TURN-AROUND")
                               ((equal? rand 3) "MOVE-PASSIVE-1")
+                              ((equal? rand 4) "MOVE-PASSIVE-2")
                               (#f "STAY")
                         )
                   )
