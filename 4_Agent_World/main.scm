@@ -122,6 +122,15 @@
       )
 )
 
+(define (is-agent percepts coordinate)
+      (let ((coordinate-value (get-location percepts (car coordinate) (car (cdr coordinate))) ))
+            (and 
+                  (list? coordinate-value)   
+                  (equal? (car coordinate-value) 'agent)
+            )
+      )
+)
+
 ; ----------------------------------------------------------
 
 (define (is-valuable-vegetation-in-front percepts)
@@ -140,18 +149,18 @@
 ; Barriers found at position B2 = Return (TURN-AROUND)
 ; Barriers found at position B3 = Return (TURN-LEFT)
 ; Barriers found at position B4 = Return 
-(define (is-barrier-next-to-vegetation percepts)
+(define (is-agent-next-to-vegetation percepts)
       (cond 
             (     ;barrier on west of vegetation. eat aggresively
-                  (is-barrier percepts '(-1 1))  
+                  (is-agent percepts '(-1 1))  
                         #t
             )    
             (     ;barrier north of vegetation. eat aggresively
-                  (is-barrier percepts '(0 2))  
+                  (is-agent percepts '(0 2))  
                         #t
             )    
             (     ;barrier on east of vegetation. eat aggresively
-                  (is-barrier percepts '(1 1))  
+                  (is-agent percepts '(1 1))  
                         #t
             )    
             (     ; No barriers next to vegetation, safe to eat passively
@@ -214,10 +223,11 @@
 
  
 (define vegetation-percept-coordinates-list '(
-      (-1 1) (1 1) 
-      (-1 2) (0 2) (1 2)
-      (-1 3) (0 3) (1 3)
-      (-1 4) (0 4) (1 4)
+      (0 2) (0 3) (0 4)
+      (-1 1)  (1 1) 
+      (-1 2)  (1 2)
+      (-1 3)  (1 3)
+      (-1 4)  (1 4)
       )
 ) 
 
@@ -303,7 +313,32 @@
       )
 )
 
-
+(define (determine-random-move percepts)
+      (cond 
+            (
+                  (is-barrier percepts '(0 2))
+                  (let ((rand (random 3)))
+                  (cond ((equal? rand 0) "TURN-RIGHT")
+                        ((equal? rand 1) "TURN-LEFT")
+                        ((equal? rand 2) "TURN-AROUND")
+                        (#f "STAY")
+                  )
+                  )
+            )
+            (
+                  #t
+                  (let ((rand (random 5)))
+                  (cond ((equal? rand 0) "TURN-RIGHT")
+                        ((equal? rand 1) "TURN-LEFT")
+                        ((equal? rand 2) "TURN-AROUND")
+                        ((equal? rand 3) "MOVE-PASSIVE-1")
+                        ((equal? rand 4) "MOVE-PASSIVE-2")
+                        (#f "STAY")
+                  )
+                  )
+            )
+      )
+)
 
 
 
@@ -322,7 +357,6 @@
 (display "current-energy:           ")(display current-energy)(newline)
 (display "previous-events:          ")(display previous-events)(newline)
 (display "Percepts:                 ")(display percepts)(newline)
-(display "Making Move:              ")(display "MOVE")(newline)
       (cond 
             (
                   ;Out of Energy... Game Over. Sit til you die.
@@ -333,7 +367,7 @@
             (     ; Vegetation is in front of you. Eat!!
                   (is-valuable-vegetation-in-front percepts)
                   (display "!!!EAT \n")
-                  (if (is-barrier-next-to-vegetation percepts)
+                  (if (is-agent-next-to-vegetation percepts)
                         "EAT-AGGRESSIVE"
                         "EAT-PASSIVE"
                   )
@@ -349,12 +383,6 @@
                   )
             )
             (
-                  (is-valuable-vegetation-nearby percepts vegetation-percept-coordinates-list)
-                  (display "!!!FOOD \n")
-                  (determine-move-to-vegetation (get-nearby-vegetation-coordinate percepts vegetation-percept-coordinates-list))
-                  ; Go move toward food 
-            )
-            (
                   (is-last-event-attacked previous-events)
                   (display "!!!ATTACKED \n")
                   (determine-run-away-strategy percepts)
@@ -363,17 +391,16 @@
                   ; This prays that the 
             )
             (
+                  (is-valuable-vegetation-nearby percepts vegetation-percept-coordinates-list)
+                  (display "!!!FOOD \n")
+                  (determine-move-to-vegetation (get-nearby-vegetation-coordinate percepts vegetation-percept-coordinates-list))
+                  ; Go move toward food 
+            )
+
+            (
                   #t ; Look around for better things
                   (display "!!!RANDOM \n")
-                  (let ((rand (random 5)))
-                        (cond ((equal? rand 0) "TURN-RIGHT")
-                              ((equal? rand 1) "TURN-LEFT")
-                              ((equal? rand 2) "TURN-AROUND")
-                              ((equal? rand 3) "MOVE-PASSIVE-1")
-                              ((equal? rand 4) "MOVE-PASSIVE-2")
-                              (#f "STAY")
-                        )
-                  )
+                  (determine-random-move percepts)
                   
             )
             
