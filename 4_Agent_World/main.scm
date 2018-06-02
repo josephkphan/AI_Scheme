@@ -14,6 +14,17 @@
 ;      0                A
 
 ; -------------  Useful Functions -------------
+(define stay-100-turns '(
+"STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" 
+"STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" 
+"STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" 
+"STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" 
+"STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" 
+"STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" 
+"STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" 
+"STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" 
+"STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" "STAY" 
+))
 (define example-percept '((empty empty empty)
 (empty (vegetation 2 45) empty empty empty)
 ((vegetation 3 150) empty empty empty empty empty barrier)
@@ -21,6 +32,20 @@
 (barrier barrier empty (vegetation 4 200) empty empty empty
 (vegetation 1 125) barrier barrier barrier))
 )
+
+(define saved-next-move '())
+
+
+; TODOs
+; * check if other agents are stronger 
+; * don't move next to a predator. duh. he'll attack you 
+; * save history of things i.e. predator
+; * explore - save vegetation location
+; * save predator type & damage
+; * check if predator is in (-1 1),(0 1), (1 1), (0 2)  If there is... Turn and move! 
+; * bloom cycle - where a vegetation is relative to its bloom cycle 
+; * bloom cycle 0 0 0 0 0 100 120 140 160 180 200
+; * next to a vegetation? Turn, watch for predators, wait! 
 
 ; nth-item - get's the nth item from a list
 ; ASSUMPTION: List is not empty
@@ -90,7 +115,7 @@
                         (list? coordinate-value)   
                         (equal? (car coordinate-value) 'vegetation)
                   )
-                  (> (nth-item 3 coordinate-value) 50)
+                  (> (nth-item 3 coordinate-value) 0)
             )
       )
 )
@@ -135,6 +160,10 @@
 
 (define (is-valuable-vegetation-in-front percepts)
       (is-valuable-vegetation percepts '(0 1)) 
+)
+
+(define (is-vegetation-in-front percepts)
+      (is-vegetation percepts '(0 1)) 
 )
 
 ; The function is called when choosing Move forward. It will determine how aggresive to be.
@@ -223,37 +252,55 @@
 
  
 (define vegetation-percept-coordinates-list '(
-      (0 2) (0 3) (0 4)
+      ; 1 moves to get to eat-position (step)
+      (0 2) (0 3) (0 4) 
+      ; 2 moves to get to eat-position (step turn)
       (-1 1)  (1 1) 
       (-1 2)  (1 2)
       (-1 3)  (1 3)
       (-1 4)  (1 4)
+      ; 3 moves to get to eat-position (step turn step)
+      (-2 2)  (2 2)
+      (-2 3)  (2 3)
+      (-3 3)  (3 3)
       )
 ) 
 
 (define (determine-move-to-vegetation coordinate)
       (cond 
             (
-                  (= (car coordinate) 0)
+                  (= (car coordinate) 0);TODO: check against predators
                   (string-append "MOVE-PASSIVE-" (number->string (- (car (cdr coordinate)))))
                   ;(string-append "MOVE-AGGRESSIVE-" (number->string (- (car (cdr coordinate)))))
 
             )
             (
-                  (= (car (cdr coordinate)) 1)
+                  (= (car (cdr coordinate)) 1);TODO: check against predators
+                  (if (< (car coordinate) 0)
+                        (set! saved-next-move '("TURN-LEFT") )
+                        (set! saved-next-move '("TURN-RIGHT") )
+                  )
                   "MOVE-PASSIVE-1"
             )
             (
-                  (= (car (cdr coordinate)) 2)
+                  (= (car (cdr coordinate)) 2);TODO: check against predators
+                  (if (< (car coordinate) 0)
+                        (set! saved-next-move '("TURN-LEFT") )
+                        (set! saved-next-move '("TURN-RIGHT") )
+                  )
                   "MOVE-PASSIVE-2"
             )
             (
-                  (= (car (cdr coordinate)) 3)
+                  (= (car (cdr coordinate)) 3);TODO: check against predators
+                  (if (< (car coordinate) 0)
+                        (set! saved-next-move '("TURN-LEFT") )
+                        (set! saved-next-move '("TURN-RIGHT") )
+                  )
                   "MOVE-PASSIVE-3"
             )
             (
-                  (= (car (cdr coordinate)) 4)
-                  "MOVE-PASSIVE-2"
+                  (= (car (cdr coordinate)) 4);TODO: check against predators
+                  "MOVE-PASSIVE-3"
                   ; Can't move directly to these spots anyways. move halfway there for now 
             )
       
@@ -269,7 +316,7 @@
                   '()
       )
       (
-            (is-valuable-vegetation percepts (car coordinate-list))
+            (is-vegetation percepts (car coordinate-list))
                   ;(display (car coordinate-list))(newline)
                   ;(get-location percepts (car (car coordinate-list)) (car (cdr (car coordinate-list))))
                   (car coordinate-list)
@@ -281,7 +328,7 @@
   )
 )
 
-(define (is-valuable-vegetation-nearby percepts coordinate-list)
+(define (is-vegetation-nearby percepts coordinate-list)
       (cond 
             ( 
                   (null? coordinate-list)
@@ -293,23 +340,91 @@
             )
             (     
                   #t
-                        (is-valuable-vegetation-nearby percepts (cdr coordinate-list))
+                        (is-vegetation-nearby percepts (cdr coordinate-list))
             )
       )
 )
 
 
+; ----------------------------------------------------------
+; This is used when "stay and Turn" near a vegetation. if a predator is found 
+; int these coordinates. turn and run 
+(define closer-predator-percept-coordinates-list '(
+      (0 2)  (0 3) 
+      (-1 1)  (1 1) 
+      (-1 2)  (1 2)
+      )
+)
 
+(define predator-percept-coordinates-list '(
+      ; 1 moves to get to eat-position (step)
+      (0 2) (0 3) (0 4) 
+      (-1 1)  (1 1) 
+      (-1 2)  (1 2)
+      (-1 3)  (1 3)
+      (-1 4)  (1 4)
+      (-2 2)  (2 2)
+      (-2 3)  (2 3)
+      )
+)
+
+(define (is-predator-coming percepts coordinate-list)
+      (cond 
+            ( 
+                  (null? coordinate-list)
+                   #f
+            )
+            (
+                  (is-predator percepts (car coordinate-list))
+                  #t
+            )
+            (     
+                  #t
+                  (is-predator-coming percepts (cdr coordinate-list))
+            )
+      )
+)
+
+(define (adjust-move-to-predator percepts coordinate-list original-move)
+      (display "is-move-next-to-predator")
+      (cond 
+            ( 
+                  (null? coordinate-list)
+                        original-move
+            )
+            (
+                  (is-predator percepts (car coordinate-list))
+                  (let ((rand (random 3)))
+                        (cond ((equal? rand 0) "TURN-RIGHT")
+                              ((equal? rand 1) "TURN-LEFT")
+                              ((equal? rand 2) "TURN-AROUND")
+                              (#f "STAY")
+                        )
+                  )
+            )
+            (     
+                  #t
+                  (adjust-move-to-predator percepts (cdr coordinate-list) original-move)
+            )
+      )
+
+      ; if true TURN! Doesn't matter just Turn! 
+)
 
 ; ----------------------------------------------------------
 
 ; Run AWay
 
 (define (determine-run-away-strategy percepts)
-      (if   
-            (or (is-predator percepts '(0 1)) (is-vegetation percepts '(0 1)  ))
-            "TURN-RIGHT"
-            "MOVE-PASSIVE-3"
+      (cond  
+            (  
+                  (or (or (is-predator percepts '(0 1)) (is-vegetation percepts '(0 1)  )) (is-barrier percepts '(0 3)))
+                  "TURN-RIGHT"
+            )
+            (
+                  #t
+                  "MOVE-PASSIVE-3"
+            )
       )
 )
 
@@ -327,12 +442,13 @@
             )
             (
                   #t
-                  (let ((rand (random 5)))
+                  (let ((rand (random 6)))
                   (cond ((equal? rand 0) "TURN-RIGHT")
                         ((equal? rand 1) "TURN-LEFT")
                         ((equal? rand 2) "TURN-AROUND")
-                        ((equal? rand 3) "MOVE-PASSIVE-1")
-                        ((equal? rand 4) "MOVE-PASSIVE-2")
+                        ((equal? rand 3) "MOVE-PASSIVE-1") ;TODO: check against predators
+                        ((equal? rand 4) "MOVE-PASSIVE-1") ;TODO: check against predators
+                        ((equal? rand 5) "MOVE-PASSIVE-1")
                         (#f "STAY")
                   )
                   )
@@ -359,30 +475,6 @@
 (display "Percepts:                 ")(display percepts)(newline)
       (cond 
             (
-                  ;Out of Energy... Game Over. Sit til you die.
-                  (< current-energy 20)
-                  (display "!!!LOW-ENERGY \n")
-                  "MOVE-PASSIVE-1"
-            )
-            (     ; Vegetation is in front of you. Eat!!
-                  (is-valuable-vegetation-in-front percepts)
-                  (display "!!!EAT \n")
-                  (if (is-agent-next-to-vegetation percepts)
-                        "EAT-AGGRESSIVE"
-                        "EAT-PASSIVE"
-                  )
-            )
-            (     ; You moved last turn..This means you are searching for food. Look around! 
-                  (is-last-event-move previous-events)
-                  (display "!!!TURN \n")
-                  (let ((rand (random 2)))
-                        (cond ((equal? rand 0) "TURN-RIGHT")
-                              ((equal? rand 1) "TURN-LEFT")
-                              (#f "STAY")
-                        )
-                  )
-            )
-            (
                   (is-last-event-attacked previous-events)
                   (display "!!!ATTACKED \n")
                   (determine-run-away-strategy percepts)
@@ -391,7 +483,90 @@
                   ; This prays that the 
             )
             (
-                  (is-valuable-vegetation-nearby percepts vegetation-percept-coordinates-list)
+                  (is-predator-coming percepts closer-predator-percept-coordinates-list)
+                  (set! saved-next-move '("MOVE-PASSIVE-2") )
+                  (let ((rand (random 3)))
+                  (cond ((equal? rand 0) "TURN-RIGHT")
+                        ((equal? rand 1) "TURN-LEFT")
+                        ((equal? rand 2) "TURN-AROUND")
+                        (#f "STAY")
+                  )
+                  )
+
+            )
+            (     ; You moved last turn..This means you are searching for food. Look around! 
+                  (not (null? saved-next-move))
+                  (display "!!!Saved Move \n")
+                  (let ((temp (car saved-next-move)))
+                        (set! saved-next-move (cdr saved-next-move) )
+                        temp
+                  )
+            )
+            (
+                  ;Out of Energy... Game Over. Sit til you die.
+                  (< current-energy 500)
+                  (display "!!!LOW-ENERGY \n")
+                  (cond 
+                        (
+                              (is-vegetation percepts '(0 1))
+                              (let ((rand (random 3)))
+                              (cond ((equal? rand 0) "TURN-RIGHT")
+                                    ((equal? rand 1) "TURN-LEFT")
+                                    ((equal? rand 2) "TURN-AROUND")
+                                    (#f "STAY")
+                              )
+                              )
+                        )
+                        (
+                              (is-barrier percepts '(0 1))
+                              (set! saved-next-move stay-100-turns)
+                              "TURN-AROUND"
+                        )
+                        (
+                              #t
+                              "MOVE-PASSIVE-1"
+                        )
+
+                  )
+            )
+            (     ; Vegetation is in front of you. Eat!!
+                  (is-vegetation-in-front percepts)
+                  (cond 
+                        (
+                              (is-valuable-vegetation-in-front percepts)
+                              (display "!!!EAT \n")
+                              (if (is-agent-next-to-vegetation percepts)
+                                    "EAT-AGGRESSIVE"
+                                    "EAT-PASSIVE"
+                              )
+                        )
+                        (
+                              #t
+                              (set! saved-next-move '("TURN-RIGHT" "TURN-RIGHT" "TURN-RIGHT"))
+                              "TURN-RIGHT"
+                        )
+                  )
+                  
+                  
+                  ;TODO; JUST ATE?!??! THEN TURN AND DEFEND THE SHIT OF THE VEGETATION peek out for predators 
+                  ; Here add to saved moves - (turn-right, turn-left, turn-left, turn-left)
+            )
+            ;TODO!!!!
+            ;TODO!!!!
+            ; (
+            ;   NEXT-TO-VEGETATION?  THEN FOLLOW THE SAVED-DETERMINED-MOVES
+            ; )
+
+            (
+                  (     or
+                        (and (is-vegetation percepts '(0 2)) (is-agent percepts '(0 1)))
+                        (and (is-vegetation percepts '(0 3)) (is-agent percepts '(0 1)))
+                  )
+                  (set! saved-next-move '("MOVE-PASSIVE-1" "TURN-LEFT") )
+                  "TURN-RIGHT"
+            )
+            (
+                  (is-vegetation-nearby percepts vegetation-percept-coordinates-list)
                   (display "!!!FOOD \n")
                   (determine-move-to-vegetation (get-nearby-vegetation-coordinate percepts vegetation-percept-coordinates-list))
                   ; Go move toward food 
